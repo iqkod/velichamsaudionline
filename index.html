@@ -5,22 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>വെളിച്ചം റമദാൻ 2026 | Velicham Saudi Online</title>
     
-    <!-- Tailwind CSS for styling -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts for Malayalam and English -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+Malayalam:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans Malayalam', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
         body {
-            font-family: 'Inter', 'Noto Sans Malayalam', sans-serif;
-            background-color: #f8fafc;
+            background-color: #f1f5f9; /* slate-100 */
         }
-        /* Custom scrollbar for a cleaner look */
+        /* Portal-style scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
         ::-webkit-scrollbar-track {
             background: #f1f5f9;
@@ -34,301 +45,375 @@
         }
     </style>
 </head>
-<body class="text-slate-800 antialiased selection:bg-blue-200 selection:text-blue-900">
+<body class="text-slate-800 antialiased selection:bg-blue-200 selection:text-blue-900 flex flex-col min-h-screen">
 
-    <main class="max-w-2xl mx-auto min-h-screen p-4 sm:p-6 flex flex-col gap-6">
+    <!-- Top Navigation Bar (Portal feel) -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-sm">
+                    V
+                </div>
+                <span class="font-bold text-slate-800 text-lg tracking-tight">Velicham Portal</span>
+            </div>
+            <a href="http://velichamonline.islahiweb.org/" class="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">
+                Dashboard &rarr;
+            </a>
+        </div>
+    </nav>
 
-        <!-- ==================== HEADER SECTION ==================== -->
-        <header class="relative bg-gradient-to-br from-blue-900 via-blue-700 to-blue-500 rounded-[2rem] shadow-xl overflow-hidden text-center p-8 sm:p-10 text-white border border-blue-400/30">
-            <!-- Decorative background blob -->
-            <div class="absolute -top-24 -right-24 w-48 h-48 bg-white opacity-10 rounded-full blur-3xl"></div>
-            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-300 opacity-20 rounded-full blur-3xl"></div>
+    <main class="max-w-3xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-6 flex-grow">
+
+        <!-- ==================== HEADER BANNER ==================== -->
+        <header class="relative bg-blue-900 rounded-2xl shadow-sm overflow-hidden text-center p-8 sm:p-12 text-white border border-blue-800">
+            <!-- Subtle Grid Pattern Background -->
+            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
             
             <div class="relative z-10 flex flex-col items-center">
-                <!-- Main Image -->
                 <img src="https://velichamsaudionlinecom.wordpress.com/wp-content/uploads/2026/02/ramadan2026.jpg-1.jpeg?w=150" 
                      alt="Ramadan 2026" 
-                     class="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white/20 shadow-lg mb-5 object-cover">
+                     class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl border-2 border-blue-400 shadow-md mb-5 object-cover">
                 
                 <h1 class="text-3xl sm:text-4xl font-extrabold mb-4 tracking-tight">വെളിച്ചം റമദാൻ 2026</h1>
                 
-                <div class="inline-block bg-white/15 backdrop-blur-md border border-white/20 text-white px-6 py-2 rounded-full text-sm sm:text-base font-semibold mb-5 shadow-sm">
+                <div class="inline-flex items-center gap-2 bg-blue-800/80 border border-blue-700 text-blue-50 px-5 py-2 rounded-lg text-sm sm:text-base font-medium mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                     സൂറ ഫാത്വിർ | സൂറ യാസീൻ
                 </div>
                 
-                <h2 class="text-xl text-blue-100 font-semibold mb-2">വിശദീകരണങ്ങൾ</h2>
-                <p class="text-xs font-bold text-blue-200 uppercase tracking-[0.2em] mt-2">വെളിച്ചം സൗദി ഓൺലൈൻ</p>
+                <h2 class="text-lg text-blue-200 font-medium mb-1">വിശദീകരണങ്ങൾ</h2>
+                <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mt-2">Saudi Indian Islahi Center</p>
             </div>
         </header>
 
         <!-- ==================== PRIMARY EXAM ACTION ==================== -->
-        <section class="bg-white p-5 sm:p-6 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+        <section class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
+            <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">ഇന്നത്തെ പരീക്ഷ</h3>
+            
             <a href="http://velichamonline.islahiweb.org/" 
-               class="block bg-red-500 hover:bg-red-600 text-white text-center py-4 rounded-2xl text-lg sm:text-xl font-extrabold transition-all duration-200 shadow-[0_4px_0_#b91c1c] hover:shadow-[0_2px_0_#b91c1c] hover:translate-y-[2px] active:shadow-none active:translate-y-[4px]">
+               class="inline-flex justify-center items-center gap-3 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white py-4 px-8 rounded-xl text-lg sm:text-xl font-bold transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                 പരീക്ഷ എഴുതാൻ ക്ലിക്ക് ചെയ്യുക
             </a>
             
-            <div class="text-center mt-5">
+            <div class="mt-5 pt-5 border-t border-slate-100 flex justify-center">
                 <a href="http://velichamonline.islahiweb.org/" 
-                   class="inline-flex items-center gap-2 text-blue-800 text-sm font-bold py-2.5 px-5 bg-blue-50 hover:bg-blue-100 border-b-2 border-blue-200 rounded-xl transition-colors">
-                    <span>📊</span> പരീക്ഷാ റിസൾട്ട് & ഡാഷ്ബോർഡ്
-                </a>
-            </div>
-        </section>
-
-        <!-- ==================== SOCIAL MEDIA LINKS ==================== -->
-        <section class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
-            <div class="flex items-center justify-center gap-3 mb-5">
-                <span class="h-px w-8 bg-slate-200"></span>
-                <h3 class="text-sm text-slate-500 font-bold uppercase tracking-wider text-center">ഓൺലൈൻ ലിങ്കുകൾ</h3>
-                <span class="h-px w-8 bg-slate-200"></span>
-            </div>
-            
-            <div class="grid grid-cols-3 gap-3 sm:gap-4">
-                <a href="https://www.youtube.com/@VelichamSaudiOnline" class="group flex flex-col items-center justify-center bg-red-50 hover:bg-red-100 border border-red-100 p-4 rounded-2xl transition-all duration-300 hover:-translate-y-1">
-                    <span class="text-2xl sm:text-3xl mb-2 group-hover:scale-110 transition-transform">📺</span>
-                    <span class="text-xs sm:text-sm font-bold text-red-800">YouTube</span>
-                </a>
-                <a href="https://open.spotify.com/show/5aIP21rON6e6d4foE5i1n7" class="group flex flex-col items-center justify-center bg-green-50 hover:bg-green-100 border border-green-100 p-4 rounded-2xl transition-all duration-300 hover:-translate-y-1">
-                    <span class="text-2xl sm:text-3xl mb-2 group-hover:scale-110 transition-transform">🎧</span>
-                    <span class="text-xs sm:text-sm font-bold text-green-800">Spotify</span>
-                </a>
-                <a href="https://www.instagram.com/velicham_saudionline" class="group flex flex-col items-center justify-center bg-pink-50 hover:bg-pink-100 border border-pink-100 p-4 rounded-2xl transition-all duration-300 hover:-translate-y-1">
-                    <span class="text-2xl sm:text-3xl mb-2 group-hover:scale-110 transition-transform">📸</span>
-                    <span class="text-xs sm:text-sm font-bold text-pink-800">Instagram</span>
+                   class="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 text-sm font-semibold transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    പരീക്ഷാ റിസൾട്ട് & ഡാഷ്ബോർഡ്
                 </a>
             </div>
         </section>
 
         <!-- ==================== EXAM TIMINGS & INFO ==================== -->
-        <section class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
-            <div class="bg-slate-800 py-4 text-center text-white font-bold text-lg flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-300"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                പരീക്ഷാ സമയക്രമം
-            </div>
-            
-            <div class="p-5 sm:p-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <!-- Start Time -->
-                    <div class="bg-blue-50 border border-blue-100 p-4 sm:p-5 rounded-2xl">
-                        <p class="text-xs font-bold text-blue-600 mb-3 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-blue-500"></span> ആരംഭിക്കുന്ന സമയം
-                        </p>
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <span class="block text-[10px] text-slate-500 font-bold mb-0.5">🇸🇦 SAUDI</span>
-                                <span class="text-lg font-extrabold text-slate-800 tracking-tight">05:00 AM</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="block text-[10px] text-slate-500 font-bold mb-0.5">INDIA 🇮🇳</span>
-                                <span class="text-lg font-extrabold text-slate-800 tracking-tight">07:30 AM</span>
-                            </div>
-                        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Timings Widget -->
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <h3 class="font-bold text-slate-800">പരീക്ഷാ സമയക്രമം</h3>
                     </div>
                     
-                    <!-- End Time -->
-                    <div class="bg-orange-50 border border-orange-100 p-4 sm:p-5 rounded-2xl">
-                        <p class="text-xs font-bold text-orange-600 mb-3 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-orange-500"></span> അവസാന സമയം
-                        </p>
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <span class="block text-[10px] text-slate-500 font-bold mb-0.5">🇸🇦 SAUDI</span>
-                                <span class="text-lg font-extrabold text-slate-800 tracking-tight">03:30 AM</span>
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-blue-500 pl-3">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-0.5">ആരംഭിക്കുന്ന സമയം</p>
+                            <div class="flex justify-between text-sm">
+                                <span class="font-semibold text-slate-700">🇸🇦 05:00 AM</span>
+                                <span class="font-semibold text-slate-700">🇮🇳 07:30 AM</span>
                             </div>
-                            <div class="text-right">
-                                <span class="block text-[10px] text-slate-500 font-bold mb-0.5">INDIA 🇮🇳</span>
-                                <span class="text-lg font-extrabold text-slate-800 tracking-tight">06:00 AM</span>
+                        </div>
+                        <div class="border-l-4 border-slate-300 pl-3">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-0.5">അവസാന സമയം</p>
+                            <div class="flex justify-between text-sm">
+                                <span class="font-semibold text-slate-700">🇸🇦 03:30 AM</span>
+                                <span class="font-semibold text-slate-700">🇮🇳 06:00 AM</span>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="flex flex-col gap-3">
-                    <a href="https://velichamsaudionline.com/vr2026/" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-center py-3.5 rounded-xl font-bold transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                        കൂടുതൽ വിവരങ്ങൾക്ക്
-                    </a>
-                    <a href="https://velichamsaudionline.com/2026/02/16/vr26-pdf/" class="text-center text-slate-500 font-bold text-sm underline underline-offset-4 hover:text-slate-800 transition-colors mt-2">
-                        എക്സാം ഷെഡ്യൂൾ കാണുക
-                    </a>
-                </div>
-            </div>
-        </section>
-
-        <!-- ==================== WINNERS CARD ==================== -->
-        <a href="https://velichamsaudionline.com/velichamramadan2026-winners/" class="group flex items-center p-5 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-[1.5rem] border-2 border-yellow-200 hover:border-yellow-400 hover:shadow-md transition-all duration-300">
-            <div class="bg-yellow-100 w-14 h-14 rounded-full flex items-center justify-center text-3xl shadow-inner mr-4 group-hover:scale-110 transition-transform">
-                🏆
-            </div>
-            <div class="flex-1">
-                <h3 class="font-extrabold text-slate-800 text-lg mb-0.5 group-hover:text-yellow-700 transition-colors">വിജയികൾ</h3>
-                <p class="text-sm font-semibold text-yellow-700">വെളിച്ചം റമദാൻ 2026 വിജയികൾ</p>
-            </div>
-            <div class="text-yellow-500 group-hover:translate-x-1 transition-transform">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </div>
-        </a>
-
-        <!-- ==================== DAILY EXAMS LIST ==================== -->
-        <section class="mt-4">
-            <div class="flex items-center gap-3 mb-5 pl-2">
-                <span class="w-1.5 h-7 bg-blue-600 rounded-full shadow-sm"></span>
-                <h2 class="text-xl sm:text-2xl font-extrabold text-slate-800">പ്രതിദിന എക്സാമുകൾ</h2>
-            </div>
-
-            <div class="flex flex-col gap-3 sm:gap-4">
                 
-                <!-- Day 11 (LATEST - Emerald Theme) -->
-                <a href="https://velichamsaudionline.com/2026/03/03/vr2026-day11/" class="group flex items-center justify-between bg-emerald-50 p-4 sm:p-5 rounded-2xl border-2 border-emerald-300 hover:border-emerald-500 hover:shadow-lg transition-all duration-300">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white shadow-md group-hover:scale-105 transition-transform">11</div>
-                        <div>
-                            <h4 class="font-bold text-emerald-950 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-11</h4>
-                            <p class="text-xs sm:text-sm font-semibold text-emerald-700">മാർച്ച് 03 (ചൊവ്വ)</p>
-                        </div>
+                <a href="https://velichamsaudionline.com/2026/02/16/vr26-pdf/" class="mt-5 block text-center text-sm font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 rounded-lg py-2 transition-colors">
+                    എക്സാം ഷെഡ്യൂൾ കാണുക &rarr;
+                </a>
+            </section>
+
+            <!-- Announcements / Social Widget -->
+            <section class="flex flex-col gap-4">
+                <!-- Winners Card -->
+                <a href="https://velichamsaudionline.com/velichamramadan2026-winners/" class="flex-1 bg-gradient-to-br from-blue-50 to-white rounded-2xl shadow-sm border border-blue-100 p-5 flex items-center group hover:border-blue-300 hover:shadow-md transition-all">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-blue-100 text-blue-600 mr-4 group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
                     </div>
-                    <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3">
-                        <span class="bg-emerald-600 text-white text-[10px] sm:text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm animate-pulse">Latest</span>
-                        <svg class="w-6 h-6 text-emerald-600 group-hover:translate-x-1.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-slate-800 group-hover:text-blue-700 transition-colors">വിജയികൾ</h3>
+                        <p class="text-xs font-medium text-slate-500 mt-0.5">വെളിച്ചം റമദാൻ 2026 വിജയികൾ</p>
                     </div>
                 </a>
 
-                <!-- Day 10 (Blue Theme) -->
-                <a href="https://velichamsaudionline.com/2026/03/02/vr2026-day10/" class="group flex items-center justify-between bg-blue-50/50 p-4 sm:p-5 rounded-2xl border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-blue-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white shadow-sm group-hover:scale-105 transition-transform">10</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-10</h4>
-                            <p class="text-xs sm:text-sm font-medium text-blue-700">മാർച്ച് 02 (തിങ്കൾ)</p>
+                <!-- Social Links -->
+                <div class="grid grid-cols-3 gap-2">
+                    <a href="https://www.youtube.com/@VelichamSaudiOnline" class="bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 hover:border-slate-300 transition-all group">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-600 group-hover:text-red-500 mb-1 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+                        <span class="text-[10px] font-bold text-slate-500">YouTube</span>
+                    </a>
+                    <a href="https://open.spotify.com/show/5aIP21rON6e6d4foE5i1n7" class="bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 hover:border-slate-300 transition-all group">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-600 group-hover:text-green-500 mb-1 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.558 17.294c-.218.36-.677.472-1.036.254-2.843-1.737-6.421-2.127-10.64-1.164-.407.092-.81-.161-.902-.569-.092-.407.161-.81.569-.902 4.618-1.054 8.568-.616 11.755 1.328.36.219.473.677.254 1.036zm1.432-3.21c-.274.444-.848.583-1.293.308-3.275-2.015-8.312-2.62-11.954-1.433-.509.166-1.05-.113-1.215-.623-.165-.51.114-1.05.624-1.215 4.246-1.385 9.851-.715 13.528 1.545.446.275.584.85.31 1.294zm.143-3.385c-3.92-2.327-10.395-2.54-14.162-1.405-.62.188-1.267-.162-1.455-.78-.188-.62.162-1.268.78-1.456 4.37-1.316 11.517-1.066 16.082 1.643.557.332.738 1.053.407 1.61-.33.557-1.052.739-1.609.408z"/></svg>
+                        <span class="text-[10px] font-bold text-slate-500">Spotify</span>
+                    </a>
+                    <a href="https://www.instagram.com/velicham_saudionline" class="bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 hover:border-slate-300 transition-all group">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-600 group-hover:text-pink-600 mb-1 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                        <span class="text-[10px] font-bold text-slate-500">Instagram</span>
+                    </a>
+                </div>
+            </section>
+        </div>
+
+        <!-- ==================== DAILY EXAMS (LMS List View) ==================== -->
+        <section class="mt-4">
+            <div class="flex items-center justify-between mb-4 pl-1">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                    <h2 class="text-lg font-bold text-slate-800">പ്രതിദിന എക്സാമുകൾ</h2>
+                </div>
+                <span class="text-xs font-semibold text-slate-400 bg-slate-200 px-2 py-1 rounded">11 Modules</span>
+            </div>
+
+            <!-- List Container -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                
+                <!-- Day 11 (Active/Latest) -->
+                <a href="https://velichamsaudionline.com/2026/03/03/vr2026-day11/" class="group block border-l-4 border-l-blue-600 border-b border-slate-100 bg-blue-50 hover:bg-blue-100/50 transition-colors p-4 sm:p-5 relative">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-lg text-white shadow-sm">
+                                11
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h4 class="font-bold text-blue-900 text-sm sm:text-base">വെളിച്ചം റമദാൻ 2026 - ഡേ-11</h4>
+                                    <span class="bg-blue-200 text-blue-800 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Active</span>
+                                </div>
+                                <p class="text-xs font-medium text-blue-600 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    മാർച്ച് 03 (ചൊവ്വ)
+                                </p>
+                            </div>
                         </div>
+                        <svg class="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                     </div>
-                    <svg class="w-6 h-6 text-blue-500 group-hover:translate-x-1.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                 </a>
 
-                <!-- Day 09 (Blue Theme) -->
-                <a href="https://velichamsaudionline.com/2026/03/01/vr2026-day09/" class="group flex items-center justify-between bg-blue-50/50 p-4 sm:p-5 rounded-2xl border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-blue-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white shadow-sm group-hover:scale-105 transition-transform">09</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-09</h4>
-                            <p class="text-xs sm:text-sm font-medium text-blue-700">മാർച്ച് 01 (ഞായർ)</p>
+                <!-- Day 10 -->
+                <a href="https://velichamsaudionline.com/2026/03/02/vr2026-day10/" class="group block border-l-4 border-l-transparent border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors p-4 sm:p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-lg text-slate-500 transition-colors">
+                                10
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-700 text-sm sm:text-base mb-1 group-hover:text-blue-600 transition-colors">വെളിച്ചം റമദാൻ 2026 - ഡേ-10</h4>
+                                <p class="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    മാർച്ച് 02 (തിങ്കൾ)
+                                </p>
+                            </div>
                         </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                     </div>
-                    <svg class="w-6 h-6 text-blue-500 group-hover:translate-x-1.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                 </a>
 
-                <!-- Day 08 (Blue Theme) -->
-                <a href="https://velichamsaudionline.com/2026/02/28/vr2026-day08/" class="group flex items-center justify-between bg-blue-50/50 p-4 sm:p-5 rounded-2xl border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-blue-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white shadow-sm group-hover:scale-105 transition-transform">08</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-08</h4>
-                            <p class="text-xs sm:text-sm font-medium text-blue-700">ഫെബ്രുവരി 28 (ശനി)</p>
+                <!-- Day 09 -->
+                <a href="https://velichamsaudionline.com/2026/03/01/vr2026-day09/" class="group block border-l-4 border-l-transparent border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors p-4 sm:p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-lg text-slate-500 transition-colors">
+                                09
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-700 text-sm sm:text-base mb-1 group-hover:text-blue-600 transition-colors">വെളിച്ചം റമദാൻ 2026 - ഡേ-09</h4>
+                                <p class="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    മാർച്ച് 01 (ഞായർ)
+                                </p>
+                            </div>
                         </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                     </div>
-                    <svg class="w-6 h-6 text-blue-500 group-hover:translate-x-1.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                 </a>
 
-                <!-- Day 07 (Blue Theme) -->
-                <a href="https://velichamsaudionline.com/2026/02/27/vr2026-day07/" class="group flex items-center justify-between bg-blue-50/50 p-4 sm:p-5 rounded-2xl border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-blue-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white shadow-sm group-hover:scale-105 transition-transform">07</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-07</h4>
-                            <p class="text-xs sm:text-sm font-medium text-blue-700">ഫെബ്രുവരി 27 (വെള്ളി)</p>
+                <!-- Day 08 -->
+                <a href="https://velichamsaudionline.com/2026/02/28/vr2026-day08/" class="group block border-l-4 border-l-transparent border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors p-4 sm:p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-lg text-slate-500 transition-colors">
+                                08
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-700 text-sm sm:text-base mb-1 group-hover:text-blue-600 transition-colors">വെളിച്ചം റമദാൻ 2026 - ഡേ-08</h4>
+                                <p class="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    ഫെബ്രുവരി 28 (ശനി)
+                                </p>
+                            </div>
                         </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                     </div>
-                    <svg class="w-6 h-6 text-blue-500 group-hover:translate-x-1.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                 </a>
 
-                <!-- Day 06 (Standard View) -->
-                <a href="https://velichamsaudionline.com/2026/02/26/vr2026-day06/" class="group flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-xl text-white group-hover:bg-slate-700 transition-colors">06</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-06</h4>
-                            <p class="text-xs sm:text-sm font-medium text-slate-500">ഫെബ്രുവരി 26 (വ്യാഴം)</p>
+                <!-- Day 07 -->
+                <a href="https://velichamsaudionline.com/2026/02/27/vr2026-day07/" class="group block border-l-4 border-l-transparent border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors p-4 sm:p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-lg text-slate-500 transition-colors">
+                                07
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-700 text-sm sm:text-base mb-1 group-hover:text-blue-600 transition-colors">വെളിച്ചം റമദാൻ 2026 - ഡേ-07</h4>
+                                <p class="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    ഫെബ്രുവരി 27 (വെള്ളി)
+                                </p>
+                            </div>
                         </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                     </div>
-                    <svg class="w-6 h-6 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+
+                <!-- Day 06 -->
+                <a href="https://velichamsaudionline.com/2026/02/26/vr2026-day06/" class="group block border-l-4 border-l-transparent border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors p-4 sm:p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-lg text-slate-500 transition-colors">
+                                06
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-700 text-sm sm:text-base mb-1 group-hover:text-blue-600 transition-colors">വെളിച്ചം റമദാൻ 2026 - ഡേ-06</h4>
+                                <p class="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    ഫെബ്രുവരി 26 (വ്യാഴം)
+                                </p>
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
                 </a>
 
                 <!-- Day 05 -->
-                <a href="https://velichamsaudionline.com/2026/02/25/vr2026-day05/" class="group flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-xl text-white group-hover:bg-slate-700 transition-colors">05</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-05</h4>
-                            <p class="text-xs sm:text-sm font-medium text-slate-500">ഫെബ്രുവരി 25 (ബുധൻ)</p>
+                <a href="https://velichamsaudionline.com/2026/02/25/vr2026-day05/" class="group block border-l-4 border-l-transparent border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors p-4 sm:p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-lg text-slate-500 transition-colors">
+                                05
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-700 text-sm sm:text-base mb-1 group-hover:text-blue-600 transition-colors">വെളിച്ചം റമദാൻ 2026 - ഡേ-05</h4>
+                                <p class="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    ഫെബ്രുവരി 25 (ബുധൻ)
+                                </p>
+                            </div>
                         </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                     </div>
-                    <svg class="w-6 h-6 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                 </a>
 
                 <!-- Day 04 -->
-                <a href="https://velichamsaudionline.com/2026/02/24/vr2026-day04/" class="group flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-xl text-white group-hover:bg-slate-700 transition-colors">04</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-04</h4>
-                            <p class="text-xs sm:text-sm font-medium text-slate-500">ഫെബ്രുവരി 24 (ചൊവ്വ)</p>
+                <a href="https://velichamsaudionline.com/2026/02/24/vr2026-day04/" class="group block border-l-4 border-l-transparent border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors p-4 sm:p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-lg text-slate-500 transition-colors">
+                                04
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-700 text-sm sm:text-base mb-1 group-hover:text-blue-600 transition-colors">വെളിച്ചം റമദാൻ 2026 - ഡേ-04</h4>
+                                <p class="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    ഫെബ്രുവരി 24 (ചൊവ്വ)
+                                </p>
+                            </div>
                         </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                     </div>
-                    <svg class="w-6 h-6 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                 </a>
 
                 <!-- Day 03 -->
-                <a href="https://velichamsaudionline.com/2026/02/23/vr2026-day03/" class="group flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-xl text-white group-hover:bg-slate-700 transition-colors">03</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-03</h4>
-                            <p class="text-xs sm:text-sm font-medium text-slate-500">ഫെബ്രുവരി 23 (തിങ്കൾ)</p>
+                <a href="https://velichamsaudionline.com/2026/02/23/vr2026-day03/" class="group block border-l-4 border-l-transparent border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors p-4 sm:p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-lg text-slate-500 transition-colors">
+                                03
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-700 text-sm sm:text-base mb-1 group-hover:text-blue-600 transition-colors">വെളിച്ചം റമദാൻ 2026 - ഡേ-03</h4>
+                                <p class="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    ഫെബ്രുവരി 23 (തിങ്കൾ)
+                                </p>
+                            </div>
                         </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                     </div>
-                    <svg class="w-6 h-6 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                 </a>
 
                 <!-- Day 02 -->
-                <a href="https://velichamsaudionline.com/2026/02/22/vr2026-day02/" class="group flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-xl text-white group-hover:bg-slate-700 transition-colors">02</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-02</h4>
-                            <p class="text-xs sm:text-sm font-medium text-slate-500">ഫെബ്രുവരി 22 (ഞായർ)</p>
+                <a href="https://velichamsaudionline.com/2026/02/22/vr2026-day02/" class="group block border-l-4 border-l-transparent border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors p-4 sm:p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-lg text-slate-500 transition-colors">
+                                02
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-700 text-sm sm:text-base mb-1 group-hover:text-blue-600 transition-colors">വെളിച്ചം റമദാൻ 2026 - ഡേ-02</h4>
+                                <p class="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    ഫെബ്രുവരി 22 (ഞായർ)
+                                </p>
+                            </div>
                         </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                     </div>
-                    <svg class="w-6 h-6 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                 </a>
 
                 <!-- Day 01 -->
-                <a href="https://velichamsaudionline.com/2026/02/21/vr2026-day01/" class="group flex items-center justify-between bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200">
-                    <div class="flex items-center gap-4 sm:gap-5">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-xl text-white group-hover:bg-slate-700 transition-colors">01</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-base sm:text-lg leading-tight mb-1">വെളിച്ചം റമദാൻ 2026 - ഡേ-01</h4>
-                            <p class="text-xs sm:text-sm font-medium text-slate-500">ഫെബ്രുവരി 21 (ശനി)</p>
+                <a href="https://velichamsaudionline.com/2026/02/21/vr2026-day01/" class="group block border-l-4 border-l-transparent bg-white hover:bg-slate-50 transition-colors p-4 sm:p-5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 group-hover:bg-slate-200 rounded-lg flex items-center justify-center font-bold text-lg text-slate-500 transition-colors">
+                                01
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-700 text-sm sm:text-base mb-1 group-hover:text-blue-600 transition-colors">വെളിച്ചം റമദാൻ 2026 - ഡേ-01</h4>
+                                <p class="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    ഫെബ്രുവരി 21 (ശനി)
+                                </p>
+                            </div>
                         </div>
+                        <svg class="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                     </div>
-                    <svg class="w-6 h-6 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                 </a>
 
-                <!-- Empty State / Info -->
-                <div class="p-5 text-center bg-slate-100/50 border border-dashed border-slate-300 rounded-2xl text-slate-500 text-sm font-medium mt-2">
-                    മറ്റു ദിവസങ്ങളിലെ വിവരങ്ങൾ ഇവിടെ ലഭിക്കും.
+                <!-- Load More / Info State -->
+                <div class="bg-slate-50 p-4 border-t border-slate-200 text-center">
+                    <p class="text-xs font-medium text-slate-500">മറ്റു ദിവസങ്ങളിലെ വിവരങ്ങൾ ഇവിടെ ലഭ്യമാകും</p>
                 </div>
             </div>
         </section>
+    </main>
 
-        <!-- ==================== FOOTER ==================== -->
-        <footer class="text-center py-6 mt-4">
-            <div class="h-px bg-slate-200 w-full mb-6 max-w-xs mx-auto"></div>
-            <p class="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-[0.15em]">
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+        <div class="max-w-3xl mx-auto p-6 text-center">
+            <div class="inline-flex items-center justify-center w-10 h-10 bg-blue-50 rounded-full mb-3 text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+            </div>
+            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">
                 സൗദി ഇന്ത്യൻ ഇസ്‌ലാഹി സെന്റർ നാഷണൽ കമ്മിറ്റി
             </p>
-        </footer>
+            <p class="text-slate-300 text-[10px] mt-2">© 2026 Velicham Saudi Online. All rights reserved.</p>
+        </div>
+    </footer>
 
-    </main>
 </body>
 </html>
