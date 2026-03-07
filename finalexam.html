@@ -10,10 +10,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Manrope', sans-serif; background-color: #f8fafc; }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); }
-        .animate-spin-slow { animation: spin 3s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        body { font-family: 'Manrope', sans-serif; background-color: #f1f5f9; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 1); }
+        .answer-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 <body>
@@ -21,13 +20,12 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-        // IMPORTANT: In this environment, __firebase_config provides the full config including API Key.
-        // If it's missing, we fallback to your provided values but MUST have an API key.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyBPHM4eHRhRpYA-JFDXMrbuFicMvnGBvts", // From your screenshot
+        // നിങ്ങളുടെ സ്ക്രീൻഷോട്ടിൽ കണ്ട ശരിയായ കോൺഫിഗറേഷൻ
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPHM4eHRhRpYA-JFDXMrbuFicMvnGBvts",
             authDomain: "velichamsaudionline-66fc0.firebaseapp.com",
             projectId: "velichamsaudionline-66fc0",
             storageBucket: "velichamsaudionline-66fc0.firebasestorage.app",
@@ -38,58 +36,15 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'velichams-audio-online';
+        
+        // __app_id ലഭ്യമല്ലെങ്കിൽ ഒരു ഡിഫോൾട്ട് ഐഡി ഉപയോഗിക്കുന്നു
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'velichams-online-exam';
 
-        // Expose to React
-        window.EXAM_APP = { 
-            auth, db, appId,
-            firebase: { collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, signInAnonymously, onAuthStateChanged, signInWithCustomToken } 
-        };
+        window.EXAM_CONFIG = { auth, db, appId, firebase: { collection, addDoc, onSnapshot, serverTimestamp, signInAnonymously, onAuthStateChanged } };
     </script>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-
-        const ALLOWED_NUMBERS = [
-            "966-501797382", "966-599122138", "966-557544882", "91-7356160643", "966-576737310",
-            "91-8281539208", "91-6235828844", "966-535768609", "966-505191459", "44-7624376081",
-            "44-7624489327", "61-0401619365", "91-6235928844", "91-6238041679", "91-7025511457",
-            "91-7025785391", "91-7034139883", "91-7034253576", "91-7034399820", "91-7306540074",
-            "91-7558871351", "91-7560956711", "91-7594803054", "91-7902448701", "91-7902470316",
-            "91-7907034843", "91-8129686991", "91-8129764186", "91-8157860261", "91-8304063560",
-            "91-8714267974", "91-8714801835", "91-8848193358", "91-9037267974", "91-9207658678",
-            "91-9496699612", "91-9539360509", "91-9567256340", "91-9629988903", "91-9633035008",
-            "91-9645328773", "91-9645395415", "91-9656912678", "91-9744205385", "91-9745616062",
-            "91-9817111151", "91-9843918413", "91-9847193435", "91-9847302529", "91-9895991116",
-            "91-9900953430", "91-9946050257", "91-9947709622", "965-50905731", "966-500677517",
-            "966-500967745", "966-501154403", "966-501250188", "966-501527780", "966-501534407",
-            "966-502163791", "966-503262990", "966-503679542", "966-503766632", "966-504165135",
-            "966-504186982", "966-504383232", "966-504435135", "966-505332710", "966-505765817",
-            "966-505797935", "966-506729657", "966-506830680", "966-506942737", "966-507177103",
-            "966-508032152", "966-508194715", "966-508222053", "966-508386571", "966-508742148",
-            "966-508815960", "966-508854732", "966-509229487", "966-509262992", "966-509292062",
-            "966-509402136", "966-510360426", "966-530141819", "966-530960342", "966-531894076",
-            "966-532063993", "966-532679687", "966-532796405", "966-532963089", "966-533594582",
-            "966-533689757", "966-534314336", "966-536273182", "966-536296334", "966-536474235",
-            "966-537637215", "966-538531297", "966-539101716", "966-539302907", "966-539867101",
-            "966-540247380", "966-541247266", "966-541632275", "966-541851574", "966-541885929",
-            "966-542099671", "966-543718439", "966-543779651", "966-543820213", "966-545094153",
-            "966-545136406", "966-545442493", "966-545900025", "966-546549197", "966-546678286",
-            "966-546940420", "966-546991610", "966-548420429", "966-549840171", "966-550619441",
-            "966-550989676", "966-551508035", "966-551582755", "966-551758148", "966-551876182",
-            "966-552455305", "966-552465305", "966-552640798", "966-552915784", "966-553602809",
-            "966-554021052", "966-554078961", "966-555069168", "966-556096654", "966-556475906",
-            "966-556857931", "966-558675808", "966-561486272", "966-562129566", "966-562834251",
-            "966-563161829", "966-564843475", "966-564984695", "966-565951942", "966-566780847",
-            "966-567133278", "966-567316632", "966-567596578", "966-567830655", "966-567971022",
-            "966-568258888", "966-569180023", "966-569534791", "966-570173640", "966-570802341",
-            "966-570828420", "966-571918309", "966-572099478", "966-572957971", "966-574359871",
-            "966-574980699", "966-576050581", "966-580591263", "966-581965286", "966-591277136",
-            "966-592598969", "966-595088137", "966-595171618", "966-599215214", "971-524832451",
-            "971-555245457", "971-557424082", "971-561432359", "971-563963407", "971-586655864",
-            "971-588822419", "91-9964946252", "965-99794592", "966-530992783", "966-531458085",
-            "966-534495300", "966-535460233", "966-553382689", "966-554415618", "91-9447156453"
-        ];
 
         const QUESTIONS = [
             { q: "മലക്കുകളെയും അവയുടെ സൃഷ്ടിപ്പുമായി ബന്ധപ്പെട്ട ചില സവിശേഷതകൾ താഴെ നൽകിയവയിൽ ഒന്നാം വചനത്തിൽ നിന്നല്ലാത്തത് ഏത്?", options: ["ഈരണ്ടും മുമ്മൂന്നും നന്നാലും ചിറകുകള്‍ ഉള്ളവർ", "പ്രകാശത്താല്‍ സൃഷ്ടിക്കപ്പെട്ടവർ", "ദൂതന്‍മാർ", "സൃഷ്ടിയില്‍ അല്ലാഹു ഉദ്ദേശിക്കുന്നതു അവന്‍ വര്‍ധിപ്പിക്കുന്നു"], correct: 1 },
@@ -97,176 +52,175 @@
             { q: "അല്ലാഹുവിന് പുറമെ അവർ വിളിച്ചു പ്രാർത്ഥിക്കുന്നവർ ................... പോലും ഉടമപെടുത്തിന്നില്ല. വിട്ടഭാഗത്തിന്റെ അറബി പദം ഏത്?", options: ["തമ്ർ (تمر)", "ഖജൂർ (خجور)", "അജ്‌വ (عജوة)", "ഖിഥ്മീർ (قطمير)"], correct: 3 },
             { q: "ഖിയാമത്തുനാളിൽ .................... അവർ നിഷേധിക്കുകയും ചെയ്യും. എന്തിനെയാണ് അവർ നിഷേധിക്കുന്നത്?", options: ["അവരെ വിളിച്ചു പ്രാര്‍ത്ഥിച്ചതിനെ (ശിർക്കിനെ)", "അവരുടെ പ്രാർത്ഥനയെ", "ശിക്ഷയെ", "നിങ്ങളുടെ ഈ ഉത്തരത്തെ"], correct: 0 },
             { q: "കുറ്റം വഹിക്കുന്ന ഒരു ദേഹവും മറ്റൊന്നിന്റെ കുറ്റം വഹിക്കുകയില്ല. ഈ തത്വത്തെ സൂചിപ്പിക്കുന്ന സൂറത്തു ഫാത്വിറിലെ വചനഭാഗം?", options: ["ഓരോ ആത്മാവും ഒന്നും സമ്പാദിച്ചു വെക്കുകയില്ല", "ഓരോരുത്തര്‍ പ്രവര്‍ത്തിച്ചതിന്റെ ഫലവും അവർക്കുതന്നെ", "കുറ്റം വഹിക്കുന്ന ഒരു ദേഹവും മറ്റൊന്നിന്റെ കുറ്റം വഹിക്കുകയില്ല", "അതിന്റെ കുറ്റം ഞാന്‍ ഏറ്റുകൊള്ളാം"], correct: 2 },
-            { q: "അവരുടെ റസൂലുകൾ ..................... അവരുടെ അടുക്കൽ ചെന്നിരുന്നു. വിട്ടഭാഗത്തിൽ വരാത്തത് ഏത്?", options: ["വ്യക്തമായ തെളിവുകള്‍", "ഏടുകള്‍", "പ്രകാശം നല്‍കുന്ന വേദഗ്രന്ഥം", "സമുദായം"], correct: 3 },
-            { q: "നഷ്ടപ്പെട്ടു പോകുന്നതേയല്ലാത്ത ഒരു വ്യാപാരത്തെ ആഗ്രഹിക്കുന്നവർ ചെയ്യാത്ത കാര്യം ഏത് ?", options: ["ഖുര്‍ആൻ പാരായണം", "നമസ്‍കാരം നിലനിർത്തുക", "ദയാനുഗ്രഹത്തിൽ നിന്ന് വർദ്ധിപ്പിക്കുക", "രഹസ്യമായും പരസ്യമായും ചിലവഴിക്കുക"], correct: 2 },
-            { q: "മതം പാലിക്കുന്നവർ (مُّقْتَصِدٌ) ഖുർആൻ അവകാശപ്പെട്ടവരിൽ എത്രാമത്തെ വിഭാഗമാണ്?", options: ["തങ്ങളോടുതന്നെ അക്രമം പ്രവർത്തിച്ചവർ", "മിതം പാലിക്കുന്നവർ", "സൽക്കർമ്മങ്ങളുമായി മുൻകടന്നവർ", "നിഷേധിച്ചവർ"], correct: 1 },
-            { q: "നരകത്തിൽ ലഭിക്കുന്ന ഏറ്റവും എളിയ ശിക്ഷയെന്താണ് ?", options: ["അഗ്നികൊണ്ടുള്ള രണ്ടു ചെരുപ്പുകളും വാറും", "അഗ്നികൊണ്ടുള്ള പുതപ്പ്", "ചുട്ടുപഴുത്ത ദണ്ഡ്", "ചൂടുള്ള വെള്ളം"], correct: 0 },
-            { q: "മനുഷ്യരെ അല്ലാഹു ഉടനെ പിടികൂടുകയാണെങ്കിൽ ഭൂമുഖത്ത് എന്ത് ബാക്കിയുണ്ടാവില്ല?", options: ["മനുഷ്യർ", "ഒരു ജന്തുവും", "വീടുകൾ", "സസ്യങ്ങൾ"], correct: 1 }
+            { q: "അവരുടെ റസൂലുകൾ ..................... അവരുടെ അടുക്കൽ ചെന്നിരുന്നു. വിട്ടഭാഗത്തിൽ വരാത്തത് ഏത്?", options: ["വ്യക്തമായ തെളിവുകള്‍ (الْبَيِّنَاتِ)", "ഏടുകള്‍ (الزُّبُرِ)", "പ്രകാശം നല്‍കുന്ന വേദഗ്രന്ഥം (الْكِتَابِ الْمُنِيرِ)", "സമുദായം (أُمَّةٍ)"], correct: 3 },
+            { q: "നഷ്ടപ്പെട്ടു പോകുന്നതേയല്ലാത്ത ഒരു വ്യാപാരത്തെ ആഗ്രഹിക്കുന്നവർ ചെയ്യാത്ത കാര്യം ഏത്?", options: ["ഖുർആൻ പാരായണം ചെയ്തുകൊണ്ടിരിക്കുക", "നമസ്കാരം നിലനിർത്തുക", "ദയാനുഗ്രഹത്തിൽ നിന്ന് വർദ്ധിപ്പിച്ചു കൊടുക്കുക", "അല്ലാഹു നൽകിയതിൽ നിന്ന് രഹസ്യമായും പരസ്യമായും ചിലവഴിക്കുക"], correct: 2 },
+            { q: "മിതം പാലിക്കുന്നവർ (مُّقْتَصِدٌ) ഖുർആൻ അവകാശപ്പെട്ടവരിൽ എത്രാമത്തെ വിഭാഗമാണ്?", options: ["തങ്ങളോട് തന്നെ അക്രമം പ്രവർത്തിച്ചവർ", "മിതം പാലിക്കുന്നവർ", "സൽക്കർമ്മങ്ങളുമായി മുൻകടന്നവർ", "നിഷേധിച്ചവർ"], correct: 1 },
+            { q: "നരകത്തിൽ ലഭിക്കുന്ന ഏറ്റവും എളിയ ശിക്ഷയെന്താണ്?", options: ["അഗ്നി കൊണ്ടുള്ള രണ്ട് ചെരിപ്പുകളും രണ്ട് വാറും", "അഗ്നി കൊണ്ടുള്ള പുതപ്പ്", "ചുട്ടുപഴുത്ത ദണ്ഡ് കൊണ്ടുള്ള മർദ്ദനം", "ചൂടുള്ള വെള്ളം തലയിലൂടെ കോരിയൊഴിക്കും"], correct: 0 },
+            { q: "മനുഷ്യർ പ്രവർത്തിച്ചുവെച്ചിട്ടുള്ളതിന് അല്ലാഹു അവരെ പിടികൂടുകയാണെങ്കിൽ ഭൂമുഖത്ത് എന്ത് ബാക്കിയുണ്ടാവില്ല?", options: ["കാര്യം ഉടനെ തീരുമാനിക്കപ്പെടുമായിരുന്നു", "ഭൂമുഖത്ത് ഒരു ജന്തുവെയും അവൻ ബാക്കി വിടുമായിരുന്നില്ല", "ശിക്ഷ ഉടനെ ഇറങ്ങുമായിരുന്നു", "അവർക്കാകട്ടെ ഇട നൽകില്ലായിരുന്നു"], correct: 1 }
         ];
 
         function App() {
-            const [fb, setFb] = useState(null);
+            const [status, setStatus] = useState('loading');
             const [user, setUser] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [view, setView] = useState('register');
             const [regData, setRegData] = useState({ name: '', place: '', mobile: '' });
             const [currentQ, setCurrentQ] = useState(0);
             const [answers, setAnswers] = useState({});
             const [results, setResults] = useState([]);
 
             useEffect(() => {
-                const checkFB = setInterval(() => {
-                    if (window.EXAM_APP) {
-                        setFb(window.EXAM_APP);
-                        clearInterval(checkFB);
+                const checkConfig = setInterval(() => {
+                    if (window.EXAM_CONFIG) {
+                        const { auth, firebase } = window.EXAM_CONFIG;
+                        firebase.signInAnonymously(auth).catch(err => console.error("Auth Error", err));
+                        firebase.onAuthStateChanged(auth, (u) => {
+                            setUser(u);
+                            setStatus('register');
+                        });
+                        clearInterval(checkConfig);
                     }
                 }, 100);
-                return () => clearInterval(checkFB);
+                return () => clearInterval(checkConfig);
             }, []);
 
             useEffect(() => {
-                if (!fb) return;
-                const initAuth = async () => {
-                    try {
-                        const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                        if (token) await fb.firebase.signInWithCustomToken(fb.auth, token);
-                        else await fb.firebase.signInAnonymously(fb.auth);
-                        
-                        fb.firebase.onAuthStateChanged(fb.auth, (u) => {
-                            setUser(u);
-                            setLoading(false);
-                        });
-                    } catch (e) {
-                        console.error("Auth Fail", e);
-                        setLoading(false);
-                    }
-                };
-                initAuth();
-            }, [fb]);
-
-            useEffect(() => {
-                if (!fb || !user) return;
-                const q = fb.firebase.collection(fb.db, 'artifacts', fb.appId, 'public', 'data', 'exam_results');
-                return fb.firebase.onSnapshot(q, (snap) => {
+                if (!user || !window.EXAM_CONFIG) return;
+                const { db, appId, firebase } = window.EXAM_CONFIG;
+                // Rule 1: Always use /artifacts/{appId}/public/data/{collection}
+                const q = firebase.collection(db, 'artifacts', appId, 'public', 'data', 'exam_results');
+                return firebase.onSnapshot(q, (snap) => {
                     setResults(snap.docs.map(d => ({id: d.id, ...d.data()})));
-                }, (err) => console.error("Firestore Listen Error", err));
-            }, [fb, user]);
+                }, (err) => console.error("Firestore Error", err));
+            }, [user]);
 
-            const handleStart = (e) => {
+            const startExam = (e) => {
                 e.preventDefault();
-                const num = regData.mobile.trim();
-                if (!ALLOWED_NUMBERS.includes(num)) {
-                    alert("ക്ഷമിക്കണം, ഈ മൊബൈൽ നമ്പർ ലിസ്റ്റിൽ ഇല്ല.");
-                    return;
-                }
-                setView('quiz');
+                setStatus('quiz');
             };
 
             const submitExam = async () => {
+                setStatus('submitting');
                 let score = 0;
                 QUESTIONS.forEach((q, i) => { if(answers[i] === q.correct) score++; });
-                
+
                 try {
-                    await fb.firebase.addDoc(fb.firebase.collection(fb.db, 'artifacts', fb.appId, 'public', 'data', 'exam_results'), {
+                    const { db, appId, firebase } = window.EXAM_CONFIG;
+                    // Rule 1 applied here for saving data
+                    const ref = firebase.collection(db, 'artifacts', appId, 'public', 'data', 'exam_results');
+                    await firebase.addDoc(ref, {
                         uid: user.uid,
-                        name: regData.name,
-                        place: regData.place,
-                        mobile: regData.mobile,
+                        ...regData,
                         score,
                         total: QUESTIONS.length,
-                        timestamp: fb.firebase.serverTimestamp(),
-                        isApproved: false
+                        timestamp: firebase.serverTimestamp()
                     });
-                    setView('done');
+                    setStatus('done');
                 } catch (e) {
-                    alert("Submission failed. Check connection.");
+                    console.error(e);
+                    alert("സമർപ്പിക്കാൻ സാധിച്ചില്ല. ഇന്റർനെറ്റ് കണക്ഷൻ പരിശോധിക്കുക.");
+                    setStatus('quiz');
                 }
             };
 
-            if (loading) return (
-                <div className="h-screen flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="font-bold text-slate-600">പോർട്ടൽ ലോഡ് ചെയ്യുന്നു...</p>
+            if (status === 'loading') return (
+                <div className="h-screen flex flex-col items-center justify-center bg-white">
+                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-slate-500 font-bold">പോർട്ടൽ ലോഡ് ചെയ്യുന്നു...</p>
                 </div>
             );
 
-            if (view === 'register') return (
-                <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="glass-card p-8 rounded-[2rem] w-full max-w-md shadow-xl animate-fade-in">
-                        <h1 className="text-2xl font-black text-center text-slate-800 mb-6">വെളിച്ചം ഓൺലൈൻ പരീക്ഷ</h1>
-                        <form onSubmit={handleStart} className="space-y-4">
-                            <input required placeholder="പേര്" className="w-full p-4 rounded-xl bg-slate-50 border-0" value={regData.name} onChange={e => setRegData({...regData, name: e.target.value})} />
-                            <input required placeholder="സ്ഥലം" className="w-full p-4 rounded-xl bg-slate-50 border-0" value={regData.place} onChange={e => setRegData({...regData, place: e.target.value})} />
-                            <input required placeholder="മൊബൈൽ (966-XXXXXXXXX)" className="w-full p-4 rounded-xl bg-slate-50 border-0" value={regData.mobile} onChange={e => setRegData({...regData, mobile: e.target.value})} />
-                            <button type="submit" className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg">പരീക്ഷ ആരംഭിക്കുക</button>
+            if (status === 'register') return (
+                <div className="min-h-screen flex items-center justify-center p-6">
+                    <div className="glass-card p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl">
+                        <div className="text-center mb-8">
+                            <h1 className="text-3xl font-black text-slate-800">വെളിച്ചം ഓൺലൈൻ</h1>
+                            <p className="text-slate-500 mt-2">ഫൈനൽ പരീക്ഷ - വിവരങ്ങൾ നൽകുക</p>
+                        </div>
+                        <form onSubmit={startExam} className="space-y-4">
+                            <input required placeholder="പേര്" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-500" value={regData.name} onChange={e => setRegData({...regData, name: e.target.value})} />
+                            <input required placeholder="സ്ഥലം" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-500" value={regData.place} onChange={e => setRegData({...regData, place: e.target.value})} />
+                            <input required placeholder="മൊബൈൽ നമ്പർ" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-500" value={regData.mobile} onChange={e => setRegData({...regData, mobile: e.target.value})} />
+                            <button type="submit" className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black text-lg shadow-lg hover:bg-blue-700">START EXAM</button>
                         </form>
-                        <button onClick={() => setView('admin')} className="w-full mt-4 text-slate-400 text-sm font-bold">Admin Dashboard</button>
+                        <button onClick={() => setStatus('admin')} className="w-full mt-6 text-slate-400 text-sm font-bold uppercase tracking-widest">Admin View</button>
                     </div>
                 </div>
             );
 
-            if (view === 'quiz') return (
-                <div className="min-h-screen p-4 flex flex-col items-center">
-                    <div className="w-full max-w-2xl bg-white p-4 rounded-2xl mb-4 flex justify-between font-black text-blue-600">
-                        <span>ചോദ്യം {currentQ + 1} / {QUESTIONS.length}</span>
+            if (status === 'quiz' || status === 'submitting') return (
+                <div className="min-h-screen p-4 md:p-8 flex flex-col items-center">
+                    <div className="w-full max-w-3xl flex justify-between items-center mb-6 px-4">
+                        <div className="bg-white px-4 py-2 rounded-full shadow-sm font-bold text-blue-600">
+                            ചോദ്യം {currentQ + 1} / {QUESTIONS.length}
+                        </div>
+                        <div className="text-slate-400 font-bold">വെളിച്ചം ഓൺലൈൻ</div>
                     </div>
-                    <div className="glass-card p-6 md:p-10 rounded-[2.5rem] w-full max-w-2xl shadow-lg mb-6">
-                        <h2 className="text-xl font-bold mb-8 leading-relaxed">{QUESTIONS[currentQ].q}</h2>
-                        <div className="space-y-3">
-                            {QUESTIONS[currentQ].options.map((o, i) => (
-                                <button key={i} onClick={() => setAnswers({...answers, [currentQ]: i})} className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${answers[currentQ] === i ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-50 border-transparent text-slate-600'}`}>
-                                    {o}
+                    
+                    <div className="glass-card p-6 md:p-12 rounded-[3rem] w-full max-w-3xl shadow-xl mb-8">
+                        <h2 className="text-xl md:text-2xl font-bold mb-10 leading-relaxed text-slate-800">{QUESTIONS[currentQ].q}</h2>
+                        <div className="grid grid-cols-1 gap-4">
+                            {QUESTIONS[currentQ].options.map((option, idx) => (
+                                <button key={idx} onClick={() => setAnswers({...answers, [currentQ]: idx})}
+                                    className={`answer-btn w-full text-left p-5 rounded-2xl border-2 font-medium ${answers[currentQ] === idx ? 'bg-blue-600 border-blue-600 text-white shadow-lg scale-[1.02]' : 'bg-slate-50 border-transparent text-slate-600 hover:border-slate-200'}`}>
+                                    <div className="flex items-center">
+                                        <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mr-4 text-sm">{String.fromCharCode(65 + idx)}</span>
+                                        {option}
+                                    </div>
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <div className="w-full max-w-2xl flex gap-4">
-                        <button disabled={currentQ === 0} onClick={() => setCurrentQ(currentQ - 1)} className="flex-1 bg-white p-4 rounded-xl font-bold">Back</button>
+
+                    <div className="w-full max-w-3xl flex gap-4 px-2">
+                        <button disabled={currentQ === 0 || status === 'submitting'} onClick={() => setCurrentQ(currentQ - 1)}
+                            className="flex-1 bg-white text-slate-600 p-5 rounded-2xl font-bold shadow-md disabled:opacity-50">Back</button>
                         {currentQ < QUESTIONS.length - 1 ? (
-                            <button onClick={() => setCurrentQ(currentQ + 1)} className="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold">Next</button>
+                            <button disabled={answers[currentQ] === undefined || status === 'submitting'} onClick={() => setCurrentQ(currentQ + 1)}
+                                className="flex-1 bg-blue-600 text-white p-5 rounded-2xl font-bold shadow-md disabled:opacity-50">Next</button>
                         ) : (
-                            <button onClick={submitExam} className="flex-1 bg-green-600 text-white p-4 rounded-xl font-bold">Submit</button>
+                            <button disabled={status === 'submitting'} onClick={submitExam}
+                                className="flex-1 bg-green-600 text-white p-5 rounded-2xl font-bold shadow-md">
+                                {status === 'submitting' ? 'Submitting...' : 'Finish Exam'}
+                            </button>
                         )}
                     </div>
                 </div>
             );
 
-            if (view === 'done') return (
-                <div className="h-screen flex items-center justify-center p-4 text-center">
-                    <div className="glass-card p-10 rounded-[3rem] shadow-2xl">
-                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">✓</div>
-                        <h2 className="text-2xl font-black mb-2">സമർപ്പിച്ചു!</h2>
-                        <p className="text-slate-500 mb-6">നിങ്ങളുടെ ഉത്തരങ്ങൾ ലഭിച്ചു. ഫലം പിന്നീട് അറിയിക്കുന്നതാണ്.</p>
-                        <button onClick={() => window.location.reload()} className="bg-slate-800 text-white px-8 py-3 rounded-xl font-bold">Close</button>
+            if (status === 'done') return (
+                <div className="h-screen flex items-center justify-center p-6">
+                    <div className="glass-card p-12 rounded-[3.5rem] text-center shadow-2xl max-w-lg w-full">
+                        <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl">✓</div>
+                        <h2 className="text-3xl font-black text-slate-800 mb-4">പൂർത്തിയായി!</h2>
+                        <p className="text-slate-500 text-lg leading-relaxed mb-8">നിങ്ങളുടെ ഉത്തരങ്ങൾ വിജയകരമായി സമർപ്പിച്ചു. ഫലങ്ങൾ ഉടൻ പ്രസിദ്ധീകരിക്കുന്നതാണ്.</p>
+                        <button onClick={() => window.location.reload()} className="w-full bg-slate-800 text-white p-5 rounded-2xl font-bold text-lg">തിരികെ പോവുക</button>
                     </div>
                 </div>
             );
 
-            if (view === 'admin') return (
-                <div className="p-4 max-w-4xl mx-auto">
-                    <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-2xl font-black">Admin Dashboard</h1>
-                        <button onClick={() => setView('register')} className="text-blue-600 font-bold underline">Exit</button>
+            if (status === 'admin') return (
+                <div className="p-6 max-w-5xl mx-auto">
+                    <div className="flex justify-between items-center mb-8">
+                        <h1 className="text-3xl font-black">പരീക്ഷാ ഫലം (Admin)</h1>
+                        <button onClick={() => setStatus('register')} className="bg-white px-6 py-2 rounded-full font-bold shadow-sm">Exit</button>
                     </div>
-                    <div className="bg-white rounded-3xl shadow overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50 border-b">
-                                <tr>
-                                    <th className="p-4">Name</th>
-                                    <th className="p-4">Score</th>
-                                    <th className="p-4">Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {results.map(r => (
-                                    <tr key={r.id} className="border-b">
-                                        <td className="p-4"><div>{r.name}</div><div className="text-xs text-slate-400">{r.mobile}</div></td>
-                                        <td className="p-4 font-black">{r.score} / {r.total}</td>
-                                        <td className="p-4 text-xs">{r.timestamp?.toDate().toLocaleString()}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {results.length === 0 && <p className="col-span-full text-center text-slate-400 py-20">ഫലങ്ങൾ ഒന്നും ലഭ്യമല്ല</p>}
+                        {results.map(r => (
+                            <div key={r.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="font-bold text-lg">{r.name}</h3>
+                                        <p className="text-slate-400 text-sm">{r.place} | {r.mobile}</p>
+                                    </div>
+                                    <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm font-black">
+                                        {r.score} / {r.total}
+                                    </div>
+                                </div>
+                                <div className="text-[10px] text-slate-300 uppercase font-bold">
+                                    {r.timestamp?.toDate().toLocaleString()}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             );
