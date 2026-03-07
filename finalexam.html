@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>വെളിച്ചം ഓൺലൈൻ - ഫൈനൽ പരീക്ഷ</title>
+    <!-- React & Tailwind CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Manrope', sans-serif; overflow-x: hidden; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .animate-pop { animation: pop 0.4s cubic-bezier(0.26, 0.53, 0.74, 1.48); }
+        @keyframes pop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body class="bg-[#f8fafc]">
+    <div id="root"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPHM4eHRhRPyA-JFDXMrbuFIeMvnGByts",
+            authDomain: "velichamsaudionline-66fc0.firebaseapp.com",
+            projectId: "velichamsaudionline-66fc0",
+            storageBucket: "velichamsaudionline-66fc0.firebasestorage.app",
+            messagingSenderId: "414471469839",
+            appId: "1:414471469839:web:d4ad0bd9d8c31dfe85dc7a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const EXAM_QUESTIONS = [
+            {
+                id: 1,
+                question: "What will the people in Paradise be given to drink as mentioned in the verse?",
+                options: ["Pure honey", "Fresh water", "Pure beverage (sealed with musk)", "Milk from springs"],
+                correct: 2
+            },
+            {
+                id: 2,
+                question: "What is the name of the spring that comes from a root meaning high/exalted?",
+                options: ["Salsabil", "Tasneem", "Kawthar", "Zanjabeel"],
+                correct: 1
+            },
+            {
+                id: 3,
+                question: "The 'immortal boys' mentioned in the verse refers to:",
+                options: ["Angels of mercy", "Youth who never age, serving the inhabitants", "The children who passed away young", "Guardians of the gates"],
+                correct: 1
+            },
+            {
+                id: 4,
+                question: "What will you see if you look at Paradise, according to the verse?",
+                options: ["Endless gardens only", "Great kingdom and bliss", "Golden palaces", "Rivers of pearls"],
+                correct: 1
+            },
+            {
+                id: 5,
+                question: "What garments will the people of Paradise wear?",
+                options: ["White linen", "Fine silk and heavy brocade", "Golden threads", "Velvet robes"],
+                correct: 1
+            },
+            {
+                id: 6,
+                question: "Which of the following is true about the people of Paradise?",
+                options: ["They will work periodically", "They will be adorned with silver bracelets", "They will feel tired at night", "They will be in constant search of food"],
+                correct: 1
+            },
+            {
+                id: 7,
+                question: "The 'pure beverage' implies:",
+                options: ["A drink that purifies the soul/heart", "Sweetened water", "Rain water from clouds", "Honey from paradise bees"],
+                correct: 0
+            }
+        ];
+
+        window.EXAM_APP = { EXAM_QUESTIONS, auth, db, collection, addDoc, onSnapshot, signInAnonymously, onAuthStateChanged, serverTimestamp };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Icon = ({ name }) => {
+            const icons = {
+                back: <path d="m15 18-6-6 6-6"/>,
+                trophy: (
+                    <>
+                        <circle cx="12" cy="8" r="6"/>
+                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </>
+                ),
+                history: (
+                    <>
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                        <path d="M12 7v5l4 2"/>
+                    </>
+                ),
+                book: (
+                    <>
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </>
+                )
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        function App() {
+            const [fb, setFb] = useState(null);
+            const [user, setUser] = useState(null);
+            const [view, setView] = useState('dashboard');
+            const [history, setHistory] = useState([]);
+            const [answers, setAnswers] = useState({});
+            const [result, setResult] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    if (window.EXAM_APP) {
+                        setFb(window.EXAM_APP);
+                        clearInterval(interval);
+                    }
+                }, 100);
+            }, []);
+
+            useEffect(() => {
+                if (!fb) return;
+                fb.signInAnonymously(fb.auth).catch(console.error);
+                const unsub = fb.onAuthStateChanged(fb.auth, (u) => {
+                    setUser(u);
+                    setLoading(false);
+                });
+                return unsub;
+            }, [fb]);
+
+            useEffect(() => {
+                if (!user || !fb) return;
+                const path = ['artifacts', 'velichams-audio-online', 'users', user.uid, 'exam_scores'];
+                const ref = fb.collection(fb.db, ...path);
+                return fb.onSnapshot(ref, (snap) => {
+                    const data = snap.docs.map(d => ({ 
+                        id: d.id, ...d.data(), 
+                        date: d.data().timestamp?.toDate() || new Date() 
+                    }));
+                    setHistory(data.sort((a,b) => b.date - a.date));
+                }, (error) => console.error("Firestore Error:", error));
+            }, [user, fb]);
+
+            const submit = async () => {
+                const score = fb.EXAM_QUESTIONS.reduce((acc, q, i) => acc + (answers[i] === q.correct ? 1 : 0), 0);
+                const payload = {
+                    score,
+                    total: fb.EXAM_QUESTIONS.length,
+                    percentage: Math.round((score / fb.EXAM_QUESTIONS.length) * 100),
+                    timestamp: fb.serverTimestamp()
+                };
+                setResult(payload);
+                setView('result');
+                if (user) {
+                    try {
+                        await fb.addDoc(fb.collection(fb.db, 'artifacts', 'velichams-audio-online', 'users', user.uid, 'exam_scores'), payload);
+                    } catch (e) {
+                        console.error("Error saving score:", e);
+                    }
+                }
+            };
+
+            if (loading) return (
+                <div className="h-screen flex items-center justify-center bg-white">
+                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            );
+
+            return (
+                <div className="max-w-xl mx-auto min-h-screen p-5 md:p-10">
+                    {view === 'dashboard' && (
+                        <div className="animate-pop">
+                            <div className="flex justify-between items-center mb-10">
+                                <div>
+                                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">വെളിച്ചം ഓൺലൈൻ</h1>
+                                    <p className="text-slate-500 font-bold text-sm">ഫലം & പരീക്ഷാ പോർട്ടൽ</p>
+                                </div>
+                                <div className="p-4 bg-blue-600 rounded-3xl text-white shadow-xl shadow-blue-100">
+                                    <Icon name="book" />
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 mb-8 overflow-hidden">
+                                <div className="p-6 border-b border-slate-50 flex items-center gap-3 font-black text-slate-800">
+                                    <Icon name="history" /> മുൻപത്തെ ഫലങ്ങൾ
+                                </div>
+                                <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                                    {history.length === 0 ? (
+                                        <div className="p-10 text-center text-slate-400 font-bold">ചരിത്രം ലഭ്യമല്ല</div>
+                                    ) : (
+                                        history.map(h => (
+                                            <div key={h.id} className="p-5 flex justify-between items-center border-b border-slate-50 last:border-0">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black ${h.percentage >= 70 ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
+                                                        {h.percentage}%
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-slate-800">Final Assessment</div>
+                                                        <div className="text-[10px] text-slate-400 font-bold">{h.date.toLocaleDateString()}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="font-black text-slate-700">{h.score}/{h.total}</div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            <button onClick={() => setView('exam')} className="w-full bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-[2rem] font-black text-lg shadow-2xl shadow-blue-200 transition-all active:scale-95">
+                                START FINAL EXAM
+                            </button>
+                            <a href="index.html" className="block text-center mt-6 text-slate-400 font-bold text-sm">Return to Home</a>
+                        </div>
+                    )}
+
+                    {view === 'exam' && (
+                        <div className="animate-pop pb-10">
+                            <button onClick={() => setView('dashboard')} className="mb-6 flex items-center gap-2 text-slate-400 font-black text-sm uppercase">
+                                <Icon name="back" /> Dashboard
+                            </button>
+                            <h2 className="text-2xl font-black text-slate-900 mb-8">Final Exam Questions</h2>
+                            {fb.EXAM_QUESTIONS.map((q, i) => (
+                                <div key={q.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm mb-6">
+                                    <p className="font-bold text-slate-800 text-lg mb-6 leading-snug">
+                                        <span className="text-blue-600 mr-2">Q{i+1}.</span> {q.question}
+                                    </p>
+                                    <div className="space-y-3">
+                                        {q.options.map((opt, oi) => (
+                                            <button key={oi} onClick={() => setAnswers({...answers, [i]: oi})}
+                                                className={`w-full text-left p-5 rounded-2xl font-bold text-sm transition-all border-2 ${answers[i] === oi ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-slate-50 border-transparent text-slate-600 hover:bg-slate-100'}`}>
+                                                {opt}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                            <button onClick={submit} disabled={Object.keys(answers).length < fb.EXAM_QUESTIONS.length}
+                                className="w-full bg-green-600 disabled:bg-slate-200 text-white p-6 rounded-[2rem] font-black text-lg shadow-xl shadow-green-100 transition-all">
+                                SUBMIT ANSWERS
+                            </button>
+                        </div>
+                    )}
+
+                    {view === 'result' && (
+                        <div className="animate-pop text-center bg-white p-10 rounded-[3rem] shadow-xl border border-slate-50 mt-10">
+                            <div className="w-20 h-20 bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Icon name="trophy" />
+                            </div>
+                            <h2 className="text-3xl font-black text-slate-900 mb-2">Congratulations!</h2>
+                            <p className="text-slate-500 font-bold mb-8">Your result has been saved.</p>
+                            
+                            <div className="grid grid-cols-2 gap-4 mb-10">
+                                <div className="bg-slate-50 p-6 rounded-[2rem]">
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Score</div>
+                                    <div className="text-3xl font-black text-blue-600">{result.score}/{result.total}</div>
+                                </div>
+                                <div className="bg-slate-50 p-6 rounded-[2rem]">
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Grade</div>
+                                    <div className="text-3xl font-black text-green-600">{result.percentage}%</div>
+                                </div>
+                            </div>
+                            
+                            <button onClick={() => { setAnswers({}); setView('dashboard'); }} className="w-full bg-slate-900 text-white p-6 rounded-[2rem] font-black">
+                                BACK TO DASHBOARD
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
