@@ -10,9 +10,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Manrope', sans-serif; background-color: #f1f5f9; }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 1); }
-        .answer-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        body { font-family: 'Manrope', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
     </style>
 </head>
 <body>
@@ -20,39 +19,47 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-        // നിങ്ങളുടെ സ്ക്രീൻഷോട്ടിൽ കണ്ട ശരിയായ കോൺഫിഗറേഷൻ
-        const firebaseConfig = {
-            apiKey: "AIzaSyBPHM4eHRhRpYA-JFDXMrbuFicMvnGBvts",
-            authDomain: "velichamsaudionline-66fc0.firebaseapp.com",
-            projectId: "velichamsaudionline-66fc0",
-            storageBucket: "velichamsaudionline-66fc0.firebasestorage.app",
-            messagingSenderId: "414471469839",
-            appId: "1:414471469839:web:d4ad0bd9d8c31dfe85dc7a"
-        };
-
+        // GLOBAL CONFIGS PROVIDED BY ENVIRONMENT
+        const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        
-        // __app_id ലഭ്യമല്ലെങ്കിൽ ഒരു ഡിഫോൾട്ട് ഐഡി ഉപയോഗിക്കുന്നു
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'velichams-online-exam';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'velicham-exam-final';
 
-        window.EXAM_CONFIG = { auth, db, appId, firebase: { collection, addDoc, onSnapshot, serverTimestamp, signInAnonymously, onAuthStateChanged } };
+        // Helper to handle authentication properly
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth failed:", error);
+            }
+        };
+
+        // Expose to React logic
+        window.EXAM_DB = { 
+            auth, db, appId, initAuth,
+            functions: { collection, addDoc, onSnapshot, serverTimestamp, onAuthStateChanged, query, doc, deleteDoc } 
+        };
     </script>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        const ADMIN_PIN = "1234";
         const QUESTIONS = [
             { q: "മലക്കുകളെയും അവയുടെ സൃഷ്ടിപ്പുമായി ബന്ധപ്പെട്ട ചില സവിശേഷതകൾ താഴെ നൽകിയവയിൽ ഒന്നാം വചനത്തിൽ നിന്നല്ലാത്തത് ഏത്?", options: ["ഈരണ്ടും മുമ്മൂന്നും നന്നാലും ചിറകുകള്‍ ഉള്ളവർ", "പ്രകാശത്താല്‍ സൃഷ്ടിക്കപ്പെട്ടവർ", "ദൂതന്‍മാർ", "സൃഷ്ടിയില്‍ അല്ലാഹു ഉദ്ദേശിക്കുന്നതു അവന്‍ വര്‍ധിപ്പിക്കുന്നു"], correct: 1 },
             { q: "പുനരുത്ഥാനത്തെ എന്തിനോടാണ് അല്ലാഹു ഉപമിക്കുന്നത് ?", options: ["ആകാശത്തുനിന്നും ഭൂമിയില്‍നിന്നും ഉപജീവനം നല്‍കുന്നത്", "നിര്‍ജീവമായ ഭൂമിയെ മഴ പെയ്യിച്ചു ജീവിപ്പിക്കുന്നത്", "ശുദ്ധമായതും കൈപ്പുരസമുള്ളതുമായ രണ്ടു ജലാശയങ്ങൾ സൃഷ്ടിച്ചത്", "സൂര്യനെയും ചന്ദ്രനെയും കീഴ്‌പ്പെടുത്തി തന്നത്"], correct: 1 },
-            { q: "അല്ലാഹുവിന് പുറമെ അവർ വിളിച്ചു പ്രാർത്ഥിക്കുന്നവർ ................... പോലും ഉടമപെടുത്തിന്നില്ല. വിട്ടഭാഗത്തിന്റെ അറബി പദം ഏത്?", options: ["തമ്ർ (تمر)", "ഖജൂർ (خجور)", "അജ്‌വ (عജوة)", "ഖിഥ്മീർ (قطمير)"], correct: 3 },
+            { q: "അല്ലാഹുവിന് പുറമെ അവർ വിളിച്ചു പ്രാർത്ഥിക്കുന്നവർ ................... പോലും ഉടമപെടുത്തിന്നില്ല. വിട്ടഭാഗത്തിന്റെ അറബി പദം ഏത്?", options: ["തമ്ർ (تمر)", "ഖജൂർ (خجور)", "അജ്‌വ (عجوة)", "ഖിഥ്മീർ (قطമير)"], correct: 3 },
             { q: "ഖിയാമത്തുനാളിൽ .................... അവർ നിഷേധിക്കുകയും ചെയ്യും. എന്തിനെയാണ് അവർ നിഷേധിക്കുന്നത്?", options: ["അവരെ വിളിച്ചു പ്രാര്‍ത്ഥിച്ചതിനെ (ശിർക്കിനെ)", "അവരുടെ പ്രാർത്ഥനയെ", "ശിക്ഷയെ", "നിങ്ങളുടെ ഈ ഉത്തരത്തെ"], correct: 0 },
             { q: "കുറ്റം വഹിക്കുന്ന ഒരു ദേഹവും മറ്റൊന്നിന്റെ കുറ്റം വഹിക്കുകയില്ല. ഈ തത്വത്തെ സൂചിപ്പിക്കുന്ന സൂറത്തു ഫാത്വിറിലെ വചനഭാഗം?", options: ["ഓരോ ആത്മാവും ഒന്നും സമ്പാദിച്ചു വെക്കുകയില്ല", "ഓരോരുത്തര്‍ പ്രവര്‍ത്തിച്ചതിന്റെ ഫലവും അവർക്കുതന്നെ", "കുറ്റം വഹിക്കുന്ന ഒരു ദേഹവും മറ്റൊന്നിന്റെ കുറ്റം വഹിക്കുകയില്ല", "അതിന്റെ കുറ്റം ഞാന്‍ ഏറ്റുകൊള്ളാം"], correct: 2 },
-            { q: "അവരുടെ റസൂലുകൾ ..................... അവരുടെ അടുക്കൽ ചെന്നിരുന്നു. വിട്ടഭാഗത്തിൽ വരാത്തത് ഏത്?", options: ["വ്യക്തമായ തെളിവുകള്‍ (الْبَيِّنَاتِ)", "ഏടുകള്‍ (الزُّبُرِ)", "പ്രകാശം നല്‍കുന്ന വേദഗ്രന്ഥം (الْكِتَابِ الْمُنِيرِ)", "സമുദായം (أُمَّةٍ)"], correct: 3 },
+            { q: "അവരുടെ റസൂലുകൾ ..................... അവരുടെ അടുക്കൽ ചെന്നിരുന്നു. വിട്ടഭാഗത്തിൽ വരാത്തത് ഏത്?", options: ["വ്യക്തമായ തെളിവുകള്‍ (الْبَيِّനَاتِ)", "ഏടുകള്‍ (الZُّബُرِ)", "പ്രകാശം നല്‍കുന്ന വേദഗ്രന്ഥം (الْكിتابِ الْمُنِيرِ)", "സമുദായം (أُمَّةٍ)"], correct: 3 },
             { q: "നഷ്ടപ്പെട്ടു പോകുന്നതേയല്ലാത്ത ഒരു വ്യാപാരത്തെ ആഗ്രഹിക്കുന്നവർ ചെയ്യാത്ത കാര്യം ഏത്?", options: ["ഖുർആൻ പാരായണം ചെയ്തുകൊണ്ടിരിക്കുക", "നമസ്കാരം നിലനിർത്തുക", "ദയാനുഗ്രഹത്തിൽ നിന്ന് വർദ്ധിപ്പിച്ചു കൊടുക്കുക", "അല്ലാഹു നൽകിയതിൽ നിന്ന് രഹസ്യമായും പരസ്യമായും ചിലവഴിക്കുക"], correct: 2 },
             { q: "മിതം പാലിക്കുന്നവർ (مُّقْتَصِدٌ) ഖുർആൻ അവകാശപ്പെട്ടവരിൽ എത്രാമത്തെ വിഭാഗമാണ്?", options: ["തങ്ങളോട് തന്നെ അക്രമം പ്രവർത്തിച്ചവർ", "മിതം പാലിക്കുന്നവർ", "സൽക്കർമ്മങ്ങളുമായി മുൻകടന്നവർ", "നിഷേധിച്ചവർ"], correct: 1 },
             { q: "നരകത്തിൽ ലഭിക്കുന്ന ഏറ്റവും എളിയ ശിക്ഷയെന്താണ്?", options: ["അഗ്നി കൊണ്ടുള്ള രണ്ട് ചെരിപ്പുകളും രണ്ട് വാറും", "അഗ്നി കൊണ്ടുള്ള പുതപ്പ്", "ചുട്ടുപഴുത്ത ദണ്ഡ് കൊണ്ടുള്ള മർദ്ദനം", "ചൂടുള്ള വെള്ളം തലയിലൂടെ കോരിയൊഴിക്കും"], correct: 0 },
@@ -60,167 +67,187 @@
         ];
 
         function App() {
-            const [status, setStatus] = useState('loading');
             const [user, setUser] = useState(null);
+            const [status, setStatus] = useState('loading');
             const [regData, setRegData] = useState({ name: '', place: '', mobile: '' });
             const [currentQ, setCurrentQ] = useState(0);
             const [answers, setAnswers] = useState({});
             const [results, setResults] = useState([]);
+            const [myResult, setMyResult] = useState(null);
+            const [adminPin, setAdminPin] = useState('');
 
+            // RULE 3: Strict Authentication Init
             useEffect(() => {
-                const checkConfig = setInterval(() => {
-                    if (window.EXAM_CONFIG) {
-                        const { auth, firebase } = window.EXAM_CONFIG;
-                        firebase.signInAnonymously(auth).catch(err => console.error("Auth Error", err));
-                        firebase.onAuthStateChanged(auth, (u) => {
-                            setUser(u);
-                            setStatus('register');
+                const interval = setInterval(() => {
+                    if (window.EXAM_DB) {
+                        const { auth, initAuth, functions } = window.EXAM_DB;
+                        initAuth();
+                        const unsubscribe = functions.onAuthStateChanged(auth, (u) => {
+                            if (u) {
+                                setUser(u);
+                                if (status === 'loading') setStatus('register');
+                            }
                         });
-                        clearInterval(checkConfig);
+                        clearInterval(interval);
                     }
                 }, 100);
-                return () => clearInterval(checkConfig);
             }, []);
 
+            // RULE 1: Fetch with Auth Guard
             useEffect(() => {
-                if (!user || !window.EXAM_CONFIG) return;
-                const { db, appId, firebase } = window.EXAM_CONFIG;
-                // Rule 1: Always use /artifacts/{appId}/public/data/{collection}
-                const q = firebase.collection(db, 'artifacts', appId, 'public', 'data', 'exam_results');
-                return firebase.onSnapshot(q, (snap) => {
-                    setResults(snap.docs.map(d => ({id: d.id, ...d.data()})));
-                }, (err) => console.error("Firestore Error", err));
+                if (!user || !window.EXAM_DB) return;
+                const { db, appId, functions } = window.EXAM_DB;
+                
+                // Path strictly follows Rule 1
+                const path = ['artifacts', appId, 'public', 'data', 'final_results'];
+                const colRef = functions.collection(db, ...path);
+                
+                const unsubscribe = functions.onSnapshot(colRef, (snap) => {
+                    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setResults(data);
+                    const mine = data.find(r => r.userId === user.uid);
+                    if (mine) {
+                        setMyResult(mine);
+                        setStatus('done');
+                    }
+                }, (err) => console.error("Firestore Error:", err));
+
+                return () => unsubscribe();
             }, [user]);
 
-            const startExam = (e) => {
-                e.preventDefault();
-                setStatus('quiz');
+            const startExam = () => {
+                if (regData.name && regData.place && regData.mobile) setStatus('quiz');
+                else alert("ദയവായി വിവരങ്ങൾ പൂരിപ്പിക്കുക");
             };
 
             const submitExam = async () => {
+                if (status === 'submitting') return;
                 setStatus('submitting');
+                
                 let score = 0;
                 QUESTIONS.forEach((q, i) => { if(answers[i] === q.correct) score++; });
 
                 try {
-                    const { db, appId, firebase } = window.EXAM_CONFIG;
-                    // Rule 1 applied here for saving data
-                    const ref = firebase.collection(db, 'artifacts', appId, 'public', 'data', 'exam_results');
-                    await firebase.addDoc(ref, {
-                        uid: user.uid,
+                    const { db, appId, functions } = window.EXAM_DB;
+                    const colRef = functions.collection(db, 'artifacts', appId, 'public', 'data', 'final_results');
+                    await functions.addDoc(colRef, {
+                        userId: user.uid,
                         ...regData,
                         score,
                         total: QUESTIONS.length,
-                        timestamp: firebase.serverTimestamp()
+                        timestamp: functions.serverTimestamp()
                     });
-                    setStatus('done');
                 } catch (e) {
-                    console.error(e);
-                    alert("സമർപ്പിക്കാൻ സാധിച്ചില്ല. ഇന്റർനെറ്റ് കണക്ഷൻ പരിശോധിക്കുക.");
+                    console.error("Submission failed:", e);
                     setStatus('quiz');
                 }
             };
 
-            if (status === 'loading') return (
-                <div className="h-screen flex flex-col items-center justify-center bg-white">
-                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-slate-500 font-bold">പോർട്ടൽ ലോഡ് ചെയ്യുന്നു...</p>
-                </div>
-            );
+            const deleteResult = async (id) => {
+                const { db, appId, functions } = window.EXAM_DB;
+                await functions.deleteDoc(functions.doc(db, 'artifacts', appId, 'public', 'data', 'final_results', id));
+            };
+
+            if (status === 'loading') return <div className="h-screen flex items-center justify-center text-slate-400">Loading...</div>;
 
             if (status === 'register') return (
-                <div className="min-h-screen flex items-center justify-center p-6">
-                    <div className="glass-card p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl">
-                        <div className="text-center mb-8">
+                <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+                    <div className="glass-card p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl border-white border-4">
+                        <div className="text-center mb-10">
                             <h1 className="text-3xl font-black text-slate-800">വെളിച്ചം ഓൺലൈൻ</h1>
-                            <p className="text-slate-500 mt-2">ഫൈനൽ പരീക്ഷ - വിവരങ്ങൾ നൽകുക</p>
+                            <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mt-1">അവസാന പരീക്ഷ</p>
                         </div>
-                        <form onSubmit={startExam} className="space-y-4">
-                            <input required placeholder="പേര്" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-500" value={regData.name} onChange={e => setRegData({...regData, name: e.target.value})} />
-                            <input required placeholder="സ്ഥലം" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-500" value={regData.place} onChange={e => setRegData({...regData, place: e.target.value})} />
-                            <input required placeholder="മൊബൈൽ നമ്പർ" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:border-blue-500" value={regData.mobile} onChange={e => setRegData({...regData, mobile: e.target.value})} />
-                            <button type="submit" className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black text-lg shadow-lg hover:bg-blue-700">START EXAM</button>
-                        </form>
-                        <button onClick={() => setStatus('admin')} className="w-full mt-6 text-slate-400 text-sm font-bold uppercase tracking-widest">Admin View</button>
+                        <div className="space-y-4">
+                            <input placeholder="പേര്" className="w-full p-4 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all" value={regData.name} onChange={e => setRegData({...regData, name: e.target.value})} />
+                            <input placeholder="സ്ഥലം" className="w-full p-4 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all" value={regData.place} onChange={e => setRegData({...regData, place: e.target.value})} />
+                            <input placeholder="മൊബൈൽ" className="w-full p-4 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all" value={regData.mobile} onChange={e => setRegData({...regData, mobile: e.target.value})} />
+                            <button onClick={startExam} className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg transform active:scale-95 transition-transform">തുടങ്ങാം</button>
+                            
+                            <div className="pt-10 flex flex-col items-center opacity-30 hover:opacity-100">
+                                <input type="password" placeholder="Admin PIN" className="text-[10px] w-20 text-center mb-2 bg-transparent" value={adminPin} onChange={e => setAdminPin(e.target.value)} />
+                                <button onClick={() => adminPin === ADMIN_PIN && setStatus('admin')} className="text-[10px] text-slate-500 font-bold uppercase">Dashboard</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
 
             if (status === 'quiz' || status === 'submitting') return (
-                <div className="min-h-screen p-4 md:p-8 flex flex-col items-center">
-                    <div className="w-full max-w-3xl flex justify-between items-center mb-6 px-4">
-                        <div className="bg-white px-4 py-2 rounded-full shadow-sm font-bold text-blue-600">
-                            ചോദ്യം {currentQ + 1} / {QUESTIONS.length}
+                <div className="min-h-screen p-4 md:p-6 flex flex-col items-center bg-slate-50" dir="rtl">
+                    <div className="w-full max-w-2xl flex justify-between items-center mb-6">
+                        <span className="font-bold text-slate-400">ചോദ്യം {currentQ + 1} / {QUESTIONS.length}</span>
+                        <div className="h-2 w-32 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 transition-all duration-300" style={{width: `${((currentQ+1)/QUESTIONS.length)*100}%`}}></div>
                         </div>
-                        <div className="text-slate-400 font-bold">വെളിച്ചം ഓൺലൈൻ</div>
                     </div>
-                    
-                    <div className="glass-card p-6 md:p-12 rounded-[3rem] w-full max-w-3xl shadow-xl mb-8">
-                        <h2 className="text-xl md:text-2xl font-bold mb-10 leading-relaxed text-slate-800">{QUESTIONS[currentQ].q}</h2>
-                        <div className="grid grid-cols-1 gap-4">
-                            {QUESTIONS[currentQ].options.map((option, idx) => (
-                                <button key={idx} onClick={() => setAnswers({...answers, [currentQ]: idx})}
-                                    className={`answer-btn w-full text-left p-5 rounded-2xl border-2 font-medium ${answers[currentQ] === idx ? 'bg-blue-600 border-blue-600 text-white shadow-lg scale-[1.02]' : 'bg-slate-50 border-transparent text-slate-600 hover:border-slate-200'}`}>
-                                    <div className="flex items-center">
-                                        <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mr-4 text-sm">{String.fromCharCode(65 + idx)}</span>
-                                        {option}
-                                    </div>
+                    <div className="glass-card p-8 md:p-12 rounded-[2.5rem] w-full max-w-2xl shadow-xl border-white border-4 min-h-[450px] flex flex-col">
+                        <h2 className="text-xl md:text-2xl font-bold mb-8 text-slate-800 leading-relaxed text-right">{QUESTIONS[currentQ].q}</h2>
+                        <div className="space-y-3 mt-auto">
+                            {QUESTIONS[currentQ].options.map((opt, i) => (
+                                <button key={i} onClick={() => setAnswers({...answers, [currentQ]: i})}
+                                    className={`w-full text-right p-5 rounded-2xl border-2 transition-all font-medium ${answers[currentQ] === i ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'}`}>
+                                    {opt}
                                 </button>
                             ))}
                         </div>
                     </div>
-
-                    <div className="w-full max-w-3xl flex gap-4 px-2">
-                        <button disabled={currentQ === 0 || status === 'submitting'} onClick={() => setCurrentQ(currentQ - 1)}
-                            className="flex-1 bg-white text-slate-600 p-5 rounded-2xl font-bold shadow-md disabled:opacity-50">Back</button>
-                        {currentQ < QUESTIONS.length - 1 ? (
-                            <button disabled={answers[currentQ] === undefined || status === 'submitting'} onClick={() => setCurrentQ(currentQ + 1)}
-                                className="flex-1 bg-blue-600 text-white p-5 rounded-2xl font-bold shadow-md disabled:opacity-50">Next</button>
-                        ) : (
-                            <button disabled={status === 'submitting'} onClick={submitExam}
-                                className="flex-1 bg-green-600 text-white p-5 rounded-2xl font-bold shadow-md">
-                                {status === 'submitting' ? 'Submitting...' : 'Finish Exam'}
-                            </button>
-                        )}
+                    <div className="w-full max-w-2xl grid grid-cols-2 gap-4 mt-6">
+                        <button disabled={currentQ === 0} onClick={() => setCurrentQ(v => v-1)} className="p-4 rounded-xl bg-white text-slate-400 font-bold border border-slate-200 disabled:opacity-30">പിന്നിലേക്ക്</button>
+                        <button onClick={() => {
+                            if(currentQ < QUESTIONS.length - 1) setCurrentQ(v => v+1);
+                            else submitExam();
+                        }} className={`p-4 rounded-xl font-bold text-white shadow-lg transform active:scale-95 transition-all ${currentQ === QUESTIONS.length - 1 ? 'bg-green-600' : 'bg-blue-600'}`}>
+                            {status === 'submitting' ? 'സമർപ്പിക്കുന്നു...' : (currentQ === QUESTIONS.length - 1 ? 'തീർക്കുക' : 'അടുത്തത്')}
+                        </button>
                     </div>
                 </div>
             );
 
             if (status === 'done') return (
-                <div className="h-screen flex items-center justify-center p-6">
-                    <div className="glass-card p-12 rounded-[3.5rem] text-center shadow-2xl max-w-lg w-full">
-                        <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl">✓</div>
-                        <h2 className="text-3xl font-black text-slate-800 mb-4">പൂർത്തിയായി!</h2>
-                        <p className="text-slate-500 text-lg leading-relaxed mb-8">നിങ്ങളുടെ ഉത്തരങ്ങൾ വിജയകരമായി സമർപ്പിച്ചു. ഫലങ്ങൾ ഉടൻ പ്രസിദ്ധീകരിക്കുന്നതാണ്.</p>
-                        <button onClick={() => window.location.reload()} className="w-full bg-slate-800 text-white p-5 rounded-2xl font-bold text-lg">തിരികെ പോവുക</button>
+                <div className="h-screen flex items-center justify-center p-6 bg-slate-50">
+                    <div className="glass-card p-12 rounded-[3rem] text-center shadow-2xl max-w-md w-full border-white border-4">
+                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-black">✓</div>
+                        <h2 className="text-2xl font-black text-slate-800 mb-6">വിജയകരമായി സമർപ്പിച്ചു</h2>
+                        <div className="bg-slate-900 p-10 rounded-[2.5rem] text-white shadow-xl">
+                            <div className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-2">നിങ്ങളുടെ സ്കോർ</div>
+                            <div className="text-6xl font-black">{myResult?.score} <span className="text-xl text-slate-500">/ {QUESTIONS.length}</span></div>
+                            <div className="mt-6 pt-6 border-t border-slate-800 text-sm text-slate-400">
+                                <span className="text-white font-bold">{myResult?.name}</span><br/>{myResult?.place}
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
 
             if (status === 'admin') return (
-                <div className="p-6 max-w-5xl mx-auto">
-                    <div className="flex justify-between items-center mb-8">
-                        <h1 className="text-3xl font-black">പരീക്ഷാ ഫലം (Admin)</h1>
-                        <button onClick={() => setStatus('register')} className="bg-white px-6 py-2 rounded-full font-bold shadow-sm">Exit</button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {results.length === 0 && <p className="col-span-full text-center text-slate-400 py-20">ഫലങ്ങൾ ഒന്നും ലഭ്യമല്ല</p>}
-                        {results.map(r => (
-                            <div key={r.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="font-bold text-lg">{r.name}</h3>
-                                        <p className="text-slate-400 text-sm">{r.place} | {r.mobile}</p>
-                                    </div>
-                                    <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm font-black">
-                                        {r.score} / {r.total}
-                                    </div>
-                                </div>
-                                <div className="text-[10px] text-slate-300 uppercase font-bold">
-                                    {r.timestamp?.toDate().toLocaleString()}
-                                </div>
+                <div className="p-8 bg-slate-50 min-h-screen">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="flex justify-between items-center mb-10">
+                            <div>
+                                <h1 className="text-3xl font-black">Results</h1>
+                                <p className="text-slate-400 font-bold">{results.length} Students Submitted</p>
                             </div>
-                        ))}
+                            <button onClick={() => setStatus('register')} className="bg-white px-6 py-3 rounded-xl font-bold shadow-sm border border-slate-200">Exit</button>
+                        </div>
+                        <div className="grid gap-4">
+                            {results.map(r => (
+                                <div key={r.id} className="flex items-center justify-between p-6 bg-white rounded-3xl shadow-sm border border-slate-100">
+                                    <div>
+                                        <div className="font-bold text-lg text-slate-800">{r.name}</div>
+                                        <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">{r.place} • {r.mobile}</div>
+                                    </div>
+                                    <div className="flex items-center gap-8">
+                                        <div className="text-center">
+                                            <div className="text-[10px] uppercase font-bold text-slate-400">Score</div>
+                                            <div className="text-2xl font-black text-blue-600">{r.score}/{r.total}</div>
+                                        </div>
+                                        <button onClick={() => deleteResult(r.id)} className="p-3 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-colors">
+                                            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             );
