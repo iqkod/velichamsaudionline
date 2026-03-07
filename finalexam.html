@@ -1,273 +1,273 @@
-<!DOCTYPE html>
-<html lang="ml">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>വെളിച്ചം ഓൺലൈൻ - ഫൈനൽ പരീക്ഷ</title>
-    <!-- React & Dependencies -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Firebase SDKs (Compat version for easier browser usage) -->
-    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
+import React, { useState, useEffect } from 'react';
+import { initializeApp } from 'firebase/app';
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  onSnapshot, 
+  query,
+  getDocs
+} from 'firebase/firestore';
+import { 
+  getAuth, 
+  signInAnonymously, 
+  signInWithCustomToken, 
+  onAuthStateChanged 
+} from 'firebase/auth';
+import { 
+  ClipboardCheck, 
+  Send, 
+  User, 
+  CheckCircle2, 
+  AlertCircle,
+  Loader2
+} from 'lucide-react';
 
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Manrope', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
-        .loading-spin { border-top-color: #3b82f6; animation: spinner 0.8s linear infinite; }
-        @keyframes spinner { to { transform: rotate(360deg); } }
-    </style>
-</head>
-<body>
-    <div id="root">
-        <div class="h-screen flex flex-col items-center justify-center bg-slate-50">
-            <div class="w-12 h-12 border-4 border-slate-200 loading-spin rounded-full mb-4"></div>
-            <p class="text-slate-400 font-bold animate-pulse">Initializing Environment...</p>
-        </div>
-    </div>
+// Firebase Configuration
+// NOTE: Ensure these environment variables are provided by the system
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'velicham-exam-app';
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+const questions = [
+  {
+    id: 1,
+    question: "ഇന്ത്യയുടെ തലസ്ഥാനം ഏതാണ്?",
+    options: ["മുംബൈ", "ഡൽഹി", "കൊൽക്കത്ത", "ചെന്നൈ"],
+    answer: "ഡൽഹി"
+  },
+  {
+    id: 2,
+    question: "കേരളത്തിന്റെ ഔദ്യോഗിക ഭാഷ ഏതാണ്?",
+    options: ["തമിഴ്", "കന്നഡ", "മലയാളം", "തെലുങ്ക്"],
+    answer: "മലയാളം"
+  }
+];
 
-        const ADMIN_PIN = "1234";
-        const QUESTIONS = [
-            { q: "മലക്കുകളെയും അവയുടെ സൃഷ്ടിപ്പുമായി ബന്ധപ്പെട്ട ചില സവിശേഷതകൾ താഴെ നൽകിയവയിൽ ഒന്നാം വചനത്തിൽ നിന്നല്ലാത്തത് ഏത്?", options: ["ഈരണ്ടും മുമ്മൂന്നും നന്നാലും ചിറകുകള്‍ ഉള്ളവർ", "പ്രകാശത്താല്‍ സൃഷ്ടിക്കപ്പെട്ടവർ", "ദൂതന്‍മാർ", "സൃഷ്ടിയില്‍ അല്ലാഹു ഉദ്ദേശിക്കുന്നതു അവന്‍ വര്‍ധിപ്പിക്കുന്നു"], correct: 1 },
-            { q: "പുനരുത്ഥാനത്തെ എന്തിനോടാണ് അല്ലാഹു ഉപമിക്കുന്നത് ?", options: ["ആകാശത്തുനിന്നും ഭൂമിയില്‍നിന്നും ഉപജീവനം നല്‍കുന്നത്", "നിര്‍ജീവമായ ഭൂമിയെ മഴ പെയ്യിച്ചു ജീവിപ്പിക്കുന്നത്", "ശുദ്ധമായതും കൈപ്പുരസമുള്ളതുമായ രണ്ടു ജലാശയങ്ങൾ സൃഷ്ടിച്ചത്", "സൂര്യനെയും ചന്ദ്രനെയും കീഴ്‌പ്പെടുത്തി തന്നത്"], correct: 1 },
-            { q: "അല്ലാഹുവിന് പുറമെ അവർ വിളിച്ചു പ്രാർത്ഥിക്കുന്നവർ ................... പോലും ഉടമപെടുത്തിന്നില്ല. വിട്ടഭാഗത്തിന്റെ അറബി പദം ഏത്?", options: ["തമ്ർ (تمر)", "ഖജൂർ (خجور)", "അജ്‌വ (عജوة)", "ഖിഥ്മീർ (قطമير)"], correct: 3 },
-            { q: "ഖിയാമത്തുനാളിൽ .................... അവർ നിഷേധിക്കുകയും ചെയ്യും. എന്തിനെയാണ് അവർ നിഷേധിക്കുന്നത്?", options: ["അവരെ വിളിച്ചു പ്രാര്‍ത്ഥിച്ചതിനെ (ശിർക്കിനെ)", "അവരുടെ പ്രാർത്ഥനയെ", "ശിക്ഷയെ", "നിങ്ങളുടെ ഈ ഉത്തരത്തെ"], correct: 0 },
-            { q: "കുറ്റം വഹിക്കുന്ന ഒരു ദേഹവും മറ്റൊന്നിന്റെ കുറ്റം വഹിക്കുകയില്ല. ഈ തത്വത്തെ സൂചിപ്പിക്കുന്ന സൂറത്തു ഫാത്വിറിലെ വചനഭാഗം?", options: ["ഓരോ ആത്മാവും ഒന്നും സമ്പാദിച്ചു വെക്കുകയില്ല", "ഓരോരുത്തര്‍ പ്രവര്‍ത്തിച്ചതിന്റെ ഫലവും അവർക്കുതന്നെ", "കുറ്റം വഹിക്കുന്ന ഒരു ദേഹവും മറ്റൊന്നിന്റെ കുറ്റം വഹിക്കുകയില്ല", "അതിന്റെ കുറ്റം ഞാന്‍ ഏറ്റുകൊള്ളാം"], correct: 2 },
-            { q: "അവരുടെ റസൂലുകൾ ..................... അവരുടെ അടുക്കൽ ചെന്നിരുന്നു. വിട്ടഭാഗത്തിൽ വരാത്തത് ഏത്?", options: ["വ്യക്തമായ തെളിവുകള്‍ (الْبَيِّനَاتِ)", "ഏടുകള്‍ (الZُّബُرِ)", "പ്രകാശം നല്‍കുന്ന വേദഗ്രന്ഥം (الْكിتابِ الْمُنِيرِ)", "സмуദായം (أُمَّةٍ)"], correct: 3 },
-            { q: "നഷ്ടപ്പെട്ടു പോകുന്നതേയല്ലാത്ത ഒരു വ്യാപാരത്തെ ആഗ്രഹിക്കുന്നവർ ചെയ്യാത്ത കാര്യം ഏത്?", options: ["ഖുർആൻ പാരായണം ചെയ്തുകൊണ്ടിരിക്കുക", "നമസ്കാരം നിലനിർത്തുക", "ദയാനുഗ്രഹത്തിൽ നിന്ന് വർദ്ധിപ്പിച്ചു കൊടുക്കുക", "അല്ലാഹു നൽകിയതിൽ നിന്ന് രഹസ്യമായും പരസ്യമായും ചിലവഴിക്കുക"], correct: 2 },
-            { q: "മിതം പാലിക്കുന്നവർ (مُّقْتَصِدٌ) ഖുർആൻ അവകാശപ്പെട്ടവരിൽ എത്രാമത്തെ വിഭാഗമാണ്?", options: ["തങ്ങളോട് തന്നെ അക്രമം പ്രവർത്തിച്ചവർ", "മിതം പാലിക്കുന്നവർ", "സൽക്കർമ്മങ്ങളുമായി മുൻകടന്നവർ", "നിഷേധിച്ചവർ"], correct: 1 },
-            { q: "നരകത്തിൽ ലഭിക്കുന്ന ഏറ്റവും എളിയ ശിക്ഷയെന്താണ്?", options: ["അഗ്നി കൊണ്ടുള്ള രണ്ട് ചെരിപ്പുകളും രണ്ട് വാറും", "അഗ്നി കൊണ്ടുള്ള പുതപ്പ്", "ചുട്ടുപഴുത്ത ദണ്ഡ് കൊണ്ടുള്ള മർദ്ദനം", "ചൂടുള്ള വെള്ളം തലയിലൂടെ കോരിയൊഴിക്കും"], correct: 0 },
-            { q: "മനുഷ്യർ പ്രവർത്തിച്ചുവെച്ചിട്ടുള്ളതിന് അല്ലാഹു അവരെ പിടികൂടുകയാണെങ്കിൽ ഭൂമുഖത്ത് എന്ത് ബാക്കിയുണ്ടാവില്ല?", options: ["കാര്യം ഉടനെ തീരുമാനിക്കപ്പെടുമായിരുന്നു", "ഭൂമുഖത്ത് ഒരു ജന്തുവെയും അവൻ ബാക്കി വിടുമായിരുന്നില്ല", "ശിക്ഷ ഉടനെ ഇറങ്ങുമായിരുന്നു", "അവർക്കാകട്ടെ ഇട നൽകില്ലായിരുന്നു"], correct: 1 }
-        ];
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('');
+  const [isStarted, setIsStarted] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState(null);
 
-        function App() {
-            const [fb, setFb] = useState(null);
-            const [user, setUser] = useState(null);
-            const [status, setStatus] = useState('loading');
-            const [regData, setRegData] = useState({ name: '', place: '', mobile: '' });
-            const [currentQ, setCurrentQ] = useState(0);
-            const [answers, setAnswers] = useState({});
-            const [results, setResults] = useState([]);
-            const [adminPin, setAdminPin] = useState('');
-
-            useEffect(() => {
-                const initFirebase = async () => {
-                    try {
-                        if (typeof __firebase_config === 'undefined') {
-                            setTimeout(initFirebase, 500);
-                            return;
-                        }
-
-                        const config = JSON.parse(__firebase_config);
-                        const app = firebase.initializeApp(config);
-                        const auth = firebase.auth();
-                        const db = firebase.firestore();
-                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'velicham-exam-final';
-
-                        const handleAuth = async () => {
-                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                                await auth.signInWithCustomToken(__initial_auth_token);
-                            } else {
-                                await auth.signInAnonymously();
-                            }
-                        };
-
-                        await handleAuth();
-
-                        auth.onAuthStateChanged((u) => {
-                            if (u) {
-                                setUser(u);
-                                setFb({ db, auth, appId });
-                                setStatus('register');
-                            }
-                        });
-                    } catch (e) {
-                        console.error("Firebase Init Error:", e);
-                        setTimeout(initFirebase, 1000);
-                    }
-                };
-                initFirebase();
-            }, []);
-
-            useEffect(() => {
-                if (!user || !fb) return;
-
-                const path = `artifacts/${fb.appId}/public/data/exam_results`;
-                const unsubscribe = fb.db.collection(path).onSnapshot(
-                    (snap) => {
-                        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                        setResults(data);
-                        if (data.some(r => r.userId === user.uid)) setStatus('done');
-                    },
-                    (err) => console.error("Firestore error:", err)
-                );
-
-                return () => unsubscribe();
-            }, [user, fb]);
-
-            const handleSubmission = async () => {
-                if (status === 'submitting') return;
-                setStatus('submitting');
-
-                const score = QUESTIONS.reduce((acc, q, idx) => {
-                    return answers[idx] === q.correct ? acc + 1 : acc;
-                }, 0);
-
-                try {
-                    const path = `artifacts/${fb.appId}/public/data/exam_results`;
-                    await fb.db.collection(path).add({
-                        userId: user.uid,
-                        ...regData,
-                        score,
-                        total: QUESTIONS.length,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    setStatus('done');
-                } catch (e) {
-                    console.error("Submission failed:", e);
-                    setStatus('quiz');
-                }
-            };
-
-            const myResult = useMemo(() => results.find(r => r.userId === user?.uid), [results, user]);
-
-            if (status === 'loading') return (
-                <div className="h-screen flex flex-col items-center justify-center bg-slate-50">
-                    <div className="w-12 h-12 border-4 border-slate-200 loading-spin rounded-full mb-4"></div>
-                    <p className="text-slate-500 font-bold">Connecting to Database...</p>
-                </div>
-            );
-
-            if (status === 'register') return (
-                <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-                    <div className="glass-card p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl border-white border-4">
-                        <div className="text-center mb-10">
-                            <h1 className="text-3xl font-black text-slate-800">വെളിച്ചം ഓൺലൈൻ</h1>
-                            <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mt-1">അവസാന പരീക്ഷ</p>
-                        </div>
-                        <div className="space-y-4">
-                            <input placeholder="പേര്" className="w-full p-4 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all" value={regData.name} onChange={e => setRegData({...regData, name: e.target.value})} />
-                            <input placeholder="സ്ഥലം" className="w-full p-4 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all" value={regData.place} onChange={e => setRegData({...regData, place: e.target.value})} />
-                            <input placeholder="മൊബൈൽ" type="tel" className="w-full p-4 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition-all" value={regData.mobile} onChange={e => setRegData({...regData, mobile: e.target.value})} />
-                            
-                            <button 
-                                onClick={() => regData.name && regData.place && setStatus('quiz')}
-                                disabled={!regData.name || !regData.place}
-                                className="w-full bg-blue-600 disabled:bg-slate-300 text-white p-4 rounded-xl font-bold shadow-lg transform active:scale-95 transition-all mt-4"
-                            >
-                                പരീക്ഷ തുടങ്ങാം
-                            </button>
-                            
-                            <div className="pt-12 flex flex-col items-center opacity-10 hover:opacity-100 transition-opacity">
-                                <input type="password" placeholder="PIN" className="text-[10px] w-20 text-center mb-1 bg-transparent border-b border-slate-300" value={adminPin} onChange={e => setAdminPin(e.target.value)} />
-                                <button onClick={() => adminPin === ADMIN_PIN && setStatus('admin')} className="text-[10px] text-slate-500 font-bold uppercase">Admin Dashboard</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-
-            if (status === 'quiz' || status === 'submitting') return (
-                <div className="min-h-screen p-4 md:p-8 flex flex-col items-center bg-slate-50" dir="rtl">
-                    <div className="w-full max-w-2xl flex justify-between items-center mb-8">
-                        <div className="text-right">
-                            <h3 className="font-black text-slate-800">ചോദ്യം {currentQ + 1}</h3>
-                        </div>
-                        <div className="h-3 w-32 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 transition-all duration-500" style={{width: `${((currentQ+1)/QUESTIONS.length)*100}%`}}></div>
-                        </div>
-                    </div>
-
-                    <div className="glass-card p-8 md:p-14 rounded-[3rem] w-full max-w-2xl shadow-xl border-white border-4 min-h-[450px] flex flex-col">
-                        <h2 className="text-xl md:text-2xl font-bold mb-10 text-slate-800 leading-relaxed text-right">{QUESTIONS[currentQ].q}</h2>
-                        <div className="space-y-3 mt-auto">
-                            {QUESTIONS[currentQ].options.map((opt, i) => (
-                                <button 
-                                    key={i} 
-                                    onClick={() => setAnswers({...answers, [currentQ]: i})}
-                                    className={`w-full text-right p-5 rounded-2xl border-2 transition-all font-medium ${
-                                        answers[currentQ] === i 
-                                        ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
-                                        : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'
-                                    }`}
-                                >
-                                    {opt}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="w-full max-w-2xl grid grid-cols-2 gap-4 mt-8">
-                        <button disabled={currentQ === 0} onClick={() => setCurrentQ(v => v-1)} className="p-5 rounded-2xl bg-white text-slate-400 font-bold border-2 border-slate-100">പിന്നിലേക്ക്</button>
-                        <button 
-                            disabled={answers[currentQ] === undefined}
-                            onClick={() => currentQ < QUESTIONS.length - 1 ? setCurrentQ(v => v+1) : handleSubmission()} 
-                            className={`p-5 rounded-2xl font-bold text-white shadow-lg ${
-                                currentQ === QUESTIONS.length - 1 ? 'bg-green-600' : 'bg-blue-600'
-                            } disabled:bg-slate-300`}
-                        >
-                            {status === 'submitting' ? 'സമർപ്പിക്കുന്നു...' : (currentQ === QUESTIONS.length - 1 ? 'പൂർത്തിയാക്കാം' : 'അടുത്തത്')}
-                        </button>
-                    </div>
-                </div>
-            );
-
-            if (status === 'done') return (
-                <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-                    <div className="glass-card p-12 rounded-[3.5rem] text-center shadow-2xl max-w-md w-full border-white border-4">
-                        <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 text-4xl shadow-inner">✓</div>
-                        <h2 className="text-3xl font-black text-slate-800 mb-8">പരീക്ഷ പൂർത്തിയായി</h2>
-                        
-                        <div className="bg-slate-900 p-10 rounded-[2.5rem] text-white shadow-2xl">
-                            <div className="text-[10px] uppercase tracking-[0.2em] text-blue-400 font-bold mb-3">RESULT SCORE</div>
-                            <div className="text-7xl font-black">{myResult?.score} <span className="text-xl text-slate-500 font-normal">/ {QUESTIONS.length}</span></div>
-                            <div className="mt-8 pt-8 border-t border-slate-800 text-right">
-                                <div className="text-white font-bold text-lg">{myResult?.name}</div>
-                                <div className="text-slate-500 text-xs font-bold uppercase">{myResult?.place}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-
-            if (status === 'admin') return (
-                <div className="p-4 md:p-12 bg-slate-50 min-h-screen">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="flex justify-between items-center mb-12">
-                            <h1 className="text-4xl font-black text-slate-800">Results ({results.length})</h1>
-                            <button onClick={() => setStatus('register')} className="bg-white px-8 py-4 rounded-2xl font-bold border border-slate-200 shadow-sm">Exit</button>
-                        </div>
-                        <div className="grid gap-4">
-                            {[...results].sort((a,b) => b.score - a.score).map((r, i) => (
-                                <div key={r.id} className="flex items-center justify-between p-6 bg-white rounded-[2rem] shadow-sm border border-slate-100">
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-400">#{i+1}</div>
-                                        <div>
-                                            <div className="font-black text-xl text-slate-800">{r.name}</div>
-                                            <div className="text-xs text-slate-400 font-bold uppercase">{r.place} • {r.mobile}</div>
-                                        </div>
-                                    </div>
-                                    <div className="text-3xl font-black text-blue-600">{r.score}/{r.total}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            );
-
-            return null;
+  // Auth initialization (Rule 3)
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
         }
+      } catch (err) {
+        console.error("Auth Error:", err);
+        setError("Firebase Authentication പരാജയപ്പെട്ടു.");
+      }
+    };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleStart = () => {
+    if (userName.trim()) {
+      setIsStarted(true);
+    }
+  };
+
+  const handleAnswer = (option) => {
+    setAnswers({ ...answers, [currentQuestion]: option });
+  };
+
+  const handleSubmit = async () => {
+    if (!user) {
+      setError("ലോഗിൻ ചെയ്തിട്ടില്ല. ദയവായി കാത്തിരിക്കുക.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Calculate score
+      let score = 0;
+      questions.forEach((q, index) => {
+        if (answers[index] === q.answer) score++;
+      });
+
+      // Firestore Path (Rule 1)
+      const resultsRef = collection(db, 'artifacts', appId, 'public', 'data', 'exam_results');
+      
+      await addDoc(resultsRef, {
+        name: userName,
+        score: score,
+        total: questions.length,
+        timestamp: new Date().toISOString(),
+        userId: user.uid
+      });
+
+      setIsSubmitted(true);
+    } catch (err) {
+      console.error("Submission Error:", err);
+      setError("ഫലം സേവ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !isStarted) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
+        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+        <p className="mt-4 font-medium text-slate-600">തയ്യാറെടുക്കുന്നു...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-bold text-slate-800">Error</h2>
+        <p className="text-slate-600 text-center mt-2">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg"
+        >
+          വീണ്ടും ശ്രമിക്കുക
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
+      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        {/* Header */}
+        <div className="bg-blue-600 p-6 text-white text-center">
+          <h1 className="text-2xl font-bold tracking-tight">വെളിച്ചം ഓൺലൈൻ പരീക്ഷ</h1>
+          <p className="text-blue-100 mt-1">നിങ്ങളുടെ അറിവ് പരിശോധിക്കൂ</p>
+        </div>
+
+        <div className="p-6 md:p-10">
+          {!isStarted ? (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <User className="w-8 h-8 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-slate-800">സ്വാഗതം!</h2>
+                <p className="text-slate-500 text-sm mt-1">തുടങ്ങുന്നതിനായി പേര് നൽകുക</p>
+              </div>
+              
+              <input
+                type="text"
+                placeholder="നിങ്ങളുടെ പൂർണ്ണനാമം"
+                className="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+              />
+              
+              <button
+                disabled={!userName.trim()}
+                onClick={handleStart}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                പരീക്ഷ ആരംഭിക്കുക
+              </button>
+            </div>
+          ) : isSubmitted ? (
+            <div className="text-center py-8">
+              <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 className="w-12 h-12 text-green-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-800">അഭിനന്ദനങ്ങൾ, {userName}!</h2>
+              <p className="text-slate-600 mt-2">നിങ്ങളുടെ ഉത്തരങ്ങൾ വിജയകരമായി സമർപ്പിച്ചു.</p>
+              <div className="mt-8 p-6 bg-slate-50 rounded-2xl inline-block min-w-[200px]">
+                <p className="text-slate-500 uppercase tracking-wider text-xs font-bold">നിങ്ങളുടെ സ്കോർ</p>
+                <p className="text-4xl font-black text-blue-600 mt-1">
+                  {Object.keys(answers).filter(key => answers[key] === questions[key].answer).length} / {questions.length}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase">
+                  ചോദ്യം {currentQuestion + 1} / {questions.length}
+                </span>
+                <div className="flex gap-1">
+                  {questions.map((_, i) => (
+                    <div key={i} className={`h-1.5 w-6 rounded-full ${i <= currentQuestion ? 'bg-blue-600' : 'bg-slate-100'}`} />
+                  ))}
+                </div>
+              </div>
+
+              <h2 className="text-xl font-bold text-slate-800 leading-snug">
+                {questions[currentQuestion].question}
+              </h2>
+
+              <div className="grid gap-3">
+                {questions[currentQuestion].options.map((option, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswer(option)}
+                    className={`p-4 text-left rounded-xl border-2 transition-all ${
+                      answers[currentQuestion] === option
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
+                        : 'border-slate-100 hover:border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-4 pt-4 border-t border-slate-100">
+                {currentQuestion > 0 && (
+                  <button
+                    onClick={() => setCurrentQuestion(currentQuestion - 1)}
+                    className="flex-1 py-4 text-slate-600 font-bold border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                  >
+                    മുൻപത്തെ ചോദ്യം
+                  </button>
+                )}
+                
+                {currentQuestion < questions.length - 1 ? (
+                  <button
+                    disabled={!answers[currentQuestion]}
+                    onClick={() => setCurrentQuestion(currentQuestion + 1)}
+                    className="flex-[2] bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-blue-100"
+                  >
+                    അടുത്ത ചോദ്യം
+                  </button>
+                ) : (
+                  <button
+                    disabled={!answers[currentQuestion] || loading}
+                    onClick={handleSubmit}
+                    className="flex-[2] bg-green-600 hover:bg-green-700 disabled:bg-slate-200 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-green-100 flex items-center justify-center gap-2"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : <Send size={18} />}
+                    സമർപ്പിക്കുക
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <p className="text-center text-slate-400 text-xs mt-8">
+        User ID: {user?.uid} | App ID: {appId}
+      </p>
+    </div>
+  );
+}
