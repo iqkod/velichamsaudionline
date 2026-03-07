@@ -10,10 +10,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Manrope', sans-serif; background-color: #f0f4f8; }
-        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        body { font-family: 'Manrope', sans-serif; background-color: #f8fafc; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .animate-spin-slow { animation: spin 3s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -21,12 +21,13 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-        // Global variables provided by environment
+        // IMPORTANT: In this environment, __firebase_config provides the full config including API Key.
+        // If it's missing, we fallback to your provided values but MUST have an API key.
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "", 
+            apiKey: "AIzaSyBPHM4eHRhRpYA-JFDXMrbuFicMvnGBvts", // From your screenshot
             authDomain: "velichamsaudionline-66fc0.firebaseapp.com",
             projectId: "velichamsaudionline-66fc0",
             storageBucket: "velichamsaudionline-66fc0.firebasestorage.app",
@@ -38,6 +39,16 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'velichams-audio-online';
+
+        // Expose to React
+        window.EXAM_APP = { 
+            auth, db, appId,
+            firebase: { collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, signInAnonymously, onAuthStateChanged, signInWithCustomToken } 
+        };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
         const ALLOWED_NUMBERS = [
             "966-501797382", "966-599122138", "966-557544882", "91-7356160643", "966-576737310",
@@ -77,386 +88,185 @@
             "966-592598969", "966-595088137", "966-595171618", "966-599215214", "971-524832451",
             "971-555245457", "971-557424082", "971-561432359", "971-563963407", "971-586655864",
             "971-588822419", "91-9964946252", "965-99794592", "966-530992783", "966-531458085",
-            "966-534495300", "966-535460233", "966-553382689", "966-554415618", "966-553382689",
-            "966-556752858", "966-566443377", "966-571053310", "966-597053063", "91-9633987889",
-            "966-506613574", "966-535821533", "966-548421962", "966-565460233", "966-571472518",
-            "91-7337505186", "966-538451880", "966-562133065", "966-508451880", "966-538024360",
-            "966-531954480", "966-539004619", "966-549295586", "966-564546985", "966-599934246",
-            "91-9447156453"
+            "966-534495300", "966-535460233", "966-553382689", "966-554415618", "91-9447156453"
         ];
 
         const QUESTIONS = [
-            {
-                q: "മലക്കുകളെയും അവയുടെ സൃഷ്ടിപ്പുമായി ബന്ധപ്പെട്ട ചില സവിശേഷതകൾ താഴെ നൽകിയവയിൽ ഒന്നാം വചനത്തിൽ നിന്നല്ലാത്തത് ഏത്?",
-                options: ["ഈരണ്ടുംമുമ്മൂന്നും നന്നാലും ചിറകുകള്‍ ഉള്ളവർ", "പ്രകാശത്താല്‍ സൃഷ്ടിക്കപ്പെട്ടവർ", "ദൂതന്‍മാർ", "സൃഷ്ടിയില്‍ അല്ലാഹു ഉദ്ദേശിക്കുന്നതു അവന്‍ വര്‍ധിപ്പിക്കുന്നു"],
-                correct: 1
-            },
-            {
-                q: "പുനരുത്ഥാനത്തെ എന്തിനോടാണ് അല്ലാഹു ഉപമിക്കുന്നത് ?",
-                options: ["ആകാശത്തുനിന്നും ഭൂമിയില്‍നിന്നും ഉപജീവനം നല്‍കുന്നത്", "നിര്‍ജീവമായ ഭൂമിയെ മഴ പെയ്യിച്ചു ജീവിപ്പിക്കുന്നത്", "ശുദ്ധമായതും കൈപ്പുരസമുള്ളതുമായ രണ്ടു ജലാശയങ്ങൾ സൃഷ്ടിച്ചത്", "സൂര്യനെയും ചന്ദ്രനെയും കീഴ്‌പ്പെടുത്തി തന്നത്"],
-                correct: 1
-            },
-            {
-                q: "അല്ലാഹുവിന് പുറമെ അവർ വിളിച്ചു പ്രാർത്ഥിക്കുന്നവർ ................... പോലും ഉടമപെടുത്തിന്നില്ല. വിട്ടഭാഗത്തിന്റെ അറബി പദം വചനത്തിൽ വന്നത് എന്താണ് ?",
-                options: ["തമ്ർ (تمر)", "ഖജൂർ (خجور)", "അജ്‌വ (عجوة)", "ഖിഥ്മീർ (قطമير)"],
-                correct: 3
-            },
-            {
-                q: "ഖിയാമത്തുനാളിൽ .................... അവർ നിഷേധിക്കുകയും ചെയ്യും. എന്തിനെയാണ് അവർ നിഷേധിക്കുന്നത്? ആരാണ് അത് നിഷേധിക്കുന്നത് ?",
-                options: ["അവരെ വിളിച്ചു പ്രാര്‍ത്ഥിച്ചതിനെ (ശിർക്കിനെ), ആ വിളിച്ചു പ്രാർത്ഥിക്കപ്പെട്ടവർ", "അവരുടെ പ്രാർത്ഥനയെ, പ്രാർത്ഥിച്ചവരെല്ലാം", "ശിക്ഷയെ, ആ ശിക്ഷക്ക് വേണ്ടി മുറവിളി കൂട്ടിയവർ", "നിങ്ങളുടെ ഈ ഉത്തരത്തെ, ആ ഉത്തരം ചെയ്തവർ"],
-                correct: 0
-            },
-            {
-                q: "ഓരോരുത്തനും ചെയ്യുന്ന പ്രവൃത്തിയുടെ ഗുണത്തിനും ദോഷത്തിനും ഉത്തരവാദി അവൻ തന്നെയാണെന്നാണ് അല്ലാഹുവിങ്കലുള്ള നീതി നിയമം. ഈ തത്വത്തെ സൂചിപ്പിക്കുന്ന സൂറത്തു ഫാത്വിറിൽ നിന്നുള്ള വചനഭാഗമാണ് ........",
-                options: ["ഓരോ ആത്മാവും അതിന്റെ മേല്‍ ആയിക്കൊണ്ടല്ലാതെ ഒന്നും സമ്പാദിച്ചു വെക്കുകയില്ല", "ഓരോരുത്തര്‍ പ്രവര്‍ത്തിച്ചതിന്റെ ഫലവും അവരവർക്കുതന്നെ", "കുറ്റം വഹിക്കുന്ന ഒരു ദേഹവും മറ്റൊന്നിന്റെ കുറ്റം വഹിക്കുകയില്ല", "അതിന്റെ കുറ്റം ഞാന്‍ ഏറ്റുകൊള്ളാം, അതു പ്രവൃത്തിച്ചു കൊള്ളുക"],
-                correct: 2
-            },
-            {
-                q: "അവരുടെ റസൂലുകൾ ..................... അവരുടെ അടുക്കൽ ചെന്നിരുന്നു, പിന്നീട് അവിശ്വസിച്ചവരെ ഞാൻ ശിക്ഷിച്ചു. വിട്ടഭാഗത്തിൽ വരാത്തത് ഏത് ?",
-                options: ["വ്യക്തമായ തെളിവുകള്‍ (الْبَيِّനَات)", "ഏടുകള്‍ (الزּُبُرِ)", "പ്രകാശം നല്‍കുന്ന വേദഗ്രന്ഥം (الْكِതَابِ الْمُنِيرِ)", "സമുദായം (أُمَّة)"],
-                correct: 3
-            },
-            {
-                q: "നഷ്ടപ്പെട്ടു പോകുന്നതേയല്ലാത്ത ഒരു വ്യാപാരത്തെ ആഗ്രഹിക്കുന്നവർ ചെയ്തു കൊണ്ടിരിക്കുന്ന മൂന്ന് കാര്യങ്ങൾ ഒരു വചനത്തിൽ പരാമർശിക്കുന്നണ്ടല്ലോ, അവയിൽ പെടാത്തത് ഏത് ?",
-                options: ["ഖുര്‍ആൻ പാരായണം ചെയ്തുകൊണ്ടിരിക്കുക", "നമസ്‍കാരം നിലനിർത്തുക", "ദയാനുഗ്രഹത്തിൽ നിന്ന് വർദ്ധിപ്പിച്ചുകൊടുക്കുക", "അല്ലാഹു നൽകിയതിൽ നിന്നും രഹസ്യമായും പരസ്യമായും ചിലവഴിക്കുക"],
-                correct: 2
-            },
-            {
-                q: "ഖുർആനിനെ അല്ലാഹു അവകാശപ്പെടുത്തി കൊടുത്തവരെ മൂന്നായാണ് വചനത്തിൽ തിരിക്കുന്നത്. അവരിലെ ഈ ഒരു കൂട്ടർ നിർബന്ധ കടമകൾ മുഴുവൻ നിർവ്വഹിക്കുന്നവരാണ്. എന്നാൽ ചിലപ്പോഴൊക്കെ അവർ മതത്തിൽ തൃപ്തികരങ്ങളല്ലാത്ത കാര്യങ്ങൾ പ്രവർത്തിച്ചേക്കാം, ആരാണിവർ ?",
-                options: ["തങ്ങളോടുതന്നെ അക്രമം പ്രവർത്തിച്ചവർ (ظَالِمٌ لِّنَفْسِهِ)", "മിതം പാലിക്കുന്നവർ (مُّقْتَصِدٌ)", "സൽക്കർമ്മങ്ങളുമായി മുൻകടന്നവർ (സബാഹികുൽ ഹൈറാത്ത്)", "നിഷേധിച്ചവർ (الَّذِينَ كَفَرُوا)"],
-                correct: 1
-            },
-            {
-                q: "നരകത്തിൽ ലഭിക്കുന്ന ഏറ്റവും എളിയ ശിക്ഷയെന്താണ് ?",
-                options: ["അഗ്നികൊണ്ടുള്ള രണ്ടു ചെരുപ്പുകളും രണ്ടു വാറും", "അഗ്നികൊണ്ടുള്ള പുതപ്പ്", "ചുട്ടുപഴുത്ത ദണ്ഡ് കൊണ്ടുള്ള മർദ്ദനം", "ചൂടുള്ള വെള്ളം തലയിലൂടെ കോരിയൊഴിക്കും"],
-                correct: 0
-            },
-            {
-                q: "''മനുഷ്യർ പ്രവർത്തിച്ചുവെച്ചിട്ടുള്ളതിന് അല്ലാഹു അവരെ പിടികൂടുകയാണെങ്കിൽ,-....................- പക്ഷേ, ഒരു നിർണ്ണയിക്കപ്പെട്ട അവധി വരേക്കും അവൻ അവർക്കു താമസം ചെയ്തുകൊടുക്കുകയാണ്''",
-                options: ["കാര്യം ഉടനെ തീരുമാനിക്കപ്പെടുമായിരുന്നു", "അതിന്റെ ഭൂമുഖത്തു ഒരു ജന്തുവെയും അവൻ ബാക്കി വിടുമായിരുന്നില്ല", "ശിക്ഷ ഉടനെ ഇറങ്ങുമായിരുന്നു", "അവർക്കാകട്ടെ ഇട നൽകില്ലായിരുന്നു"],
-                correct: 1
-            }
+            { q: "മലക്കുകളെയും അവയുടെ സൃഷ്ടിപ്പുമായി ബന്ധപ്പെട്ട ചില സവിശേഷതകൾ താഴെ നൽകിയവയിൽ ഒന്നാം വചനത്തിൽ നിന്നല്ലാത്തത് ഏത്?", options: ["ഈരണ്ടും മുമ്മൂന്നും നന്നാലും ചിറകുകള്‍ ഉള്ളവർ", "പ്രകാശത്താല്‍ സൃഷ്ടിക്കപ്പെട്ടവർ", "ദൂതന്‍മാർ", "സൃഷ്ടിയില്‍ അല്ലാഹു ഉദ്ദേശിക്കുന്നതു അവന്‍ വര്‍ധിപ്പിക്കുന്നു"], correct: 1 },
+            { q: "പുനരുത്ഥാനത്തെ എന്തിനോടാണ് അല്ലാഹു ഉപമിക്കുന്നത് ?", options: ["ആകാശത്തുനിന്നും ഭൂമിയില്‍നിന്നും ഉപജീവനം നല്‍കുന്നത്", "നിര്‍ജീവമായ ഭൂമിയെ മഴ പെയ്യിച്ചു ജീവിപ്പിക്കുന്നത്", "ശുദ്ധമായതും കൈപ്പുരസമുള്ളതുമായ രണ്ടു ജലാശയങ്ങൾ സൃഷ്ടിച്ചത്", "സൂര്യനെയും ചന്ദ്രനെയും കീഴ്‌പ്പെടുത്തി തന്നത്"], correct: 1 },
+            { q: "അല്ലാഹുവിന് പുറമെ അവർ വിളിച്ചു പ്രാർത്ഥിക്കുന്നവർ ................... പോലും ഉടമപെടുത്തിന്നില്ല. വിട്ടഭാഗത്തിന്റെ അറബി പദം ഏത്?", options: ["തമ്ർ (تمر)", "ഖജൂർ (خجور)", "അജ്‌വ (عജوة)", "ഖിഥ്മീർ (قطمير)"], correct: 3 },
+            { q: "ഖിയാമത്തുനാളിൽ .................... അവർ നിഷേധിക്കുകയും ചെയ്യും. എന്തിനെയാണ് അവർ നിഷേധിക്കുന്നത്?", options: ["അവരെ വിളിച്ചു പ്രാര്‍ത്ഥിച്ചതിനെ (ശിർക്കിനെ)", "അവരുടെ പ്രാർത്ഥനയെ", "ശിക്ഷയെ", "നിങ്ങളുടെ ഈ ഉത്തരത്തെ"], correct: 0 },
+            { q: "കുറ്റം വഹിക്കുന്ന ഒരു ദേഹവും മറ്റൊന്നിന്റെ കുറ്റം വഹിക്കുകയില്ല. ഈ തത്വത്തെ സൂചിപ്പിക്കുന്ന സൂറത്തു ഫാത്വിറിലെ വചനഭാഗം?", options: ["ഓരോ ആത്മാവും ഒന്നും സമ്പാദിച്ചു വെക്കുകയില്ല", "ഓരോരുത്തര്‍ പ്രവര്‍ത്തിച്ചതിന്റെ ഫലവും അവർക്കുതന്നെ", "കുറ്റം വഹിക്കുന്ന ഒരു ദേഹവും മറ്റൊന്നിന്റെ കുറ്റം വഹിക്കുകയില്ല", "അതിന്റെ കുറ്റം ഞാന്‍ ഏറ്റുകൊള്ളാം"], correct: 2 },
+            { q: "അവരുടെ റസൂലുകൾ ..................... അവരുടെ അടുക്കൽ ചെന്നിരുന്നു. വിട്ടഭാഗത്തിൽ വരാത്തത് ഏത്?", options: ["വ്യക്തമായ തെളിവുകള്‍", "ഏടുകള്‍", "പ്രകാശം നല്‍കുന്ന വേദഗ്രന്ഥം", "സമുദായം"], correct: 3 },
+            { q: "നഷ്ടപ്പെട്ടു പോകുന്നതേയല്ലാത്ത ഒരു വ്യാപാരത്തെ ആഗ്രഹിക്കുന്നവർ ചെയ്യാത്ത കാര്യം ഏത് ?", options: ["ഖുര്‍ആൻ പാരായണം", "നമസ്‍കാരം നിലനിർത്തുക", "ദയാനുഗ്രഹത്തിൽ നിന്ന് വർദ്ധിപ്പിക്കുക", "രഹസ്യമായും പരസ്യമായും ചിലവഴിക്കുക"], correct: 2 },
+            { q: "മതം പാലിക്കുന്നവർ (مُّقْتَصِدٌ) ഖുർആൻ അവകാശപ്പെട്ടവരിൽ എത്രാമത്തെ വിഭാഗമാണ്?", options: ["തങ്ങളോടുതന്നെ അക്രമം പ്രവർത്തിച്ചവർ", "മിതം പാലിക്കുന്നവർ", "സൽക്കർമ്മങ്ങളുമായി മുൻകടന്നവർ", "നിഷേധിച്ചവർ"], correct: 1 },
+            { q: "നരകത്തിൽ ലഭിക്കുന്ന ഏറ്റവും എളിയ ശിക്ഷയെന്താണ് ?", options: ["അഗ്നികൊണ്ടുള്ള രണ്ടു ചെരുപ്പുകളും വാറും", "അഗ്നികൊണ്ടുള്ള പുതപ്പ്", "ചുട്ടുപഴുത്ത ദണ്ഡ്", "ചൂടുള്ള വെള്ളം"], correct: 0 },
+            { q: "മനുഷ്യരെ അല്ലാഹു ഉടനെ പിടികൂടുകയാണെങ്കിൽ ഭൂമുഖത്ത് എന്ത് ബാക്കിയുണ്ടാവില്ല?", options: ["മനുഷ്യർ", "ഒരു ജന്തുവും", "വീടുകൾ", "സസ്യങ്ങൾ"], correct: 1 }
         ];
-
-        window.EXAM_APP = { 
-            ALLOWED_NUMBERS, QUESTIONS, auth, db, appId,
-            firebase: { collection, addDoc, onSnapshot, doc, updateDoc, getDoc, serverTimestamp, query, signInAnonymously, onAuthStateChanged, signInWithCustomToken } 
-        };
-    </script>
-
-    <script type="text/babel">
-        const { useState, useEffect } = React;
 
         function App() {
             const [fb, setFb] = useState(null);
             const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [view, setView] = useState('register');
             const [regData, setRegData] = useState({ name: '', place: '', mobile: '' });
-            const [view, setView] = useState('register'); // register, quiz, review, result, admin
             const [currentQ, setCurrentQ] = useState(0);
             const [answers, setAnswers] = useState({});
-            const [examStatus, setExamStatus] = useState(null); 
-            const [allResults, setAllResults] = useState([]);
-            const [loading, setLoading] = useState(true);
+            const [results, setResults] = useState([]);
 
             useEffect(() => {
-                const interval = setInterval(() => {
+                const checkFB = setInterval(() => {
                     if (window.EXAM_APP) {
                         setFb(window.EXAM_APP);
-                        clearInterval(interval);
+                        clearInterval(checkFB);
                     }
                 }, 100);
+                return () => clearInterval(checkFB);
             }, []);
 
             useEffect(() => {
                 if (!fb) return;
                 const initAuth = async () => {
                     try {
-                        const customToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                        if (customToken) {
-                            await fb.firebase.signInWithCustomToken(fb.auth, customToken);
-                        } else {
-                            await fb.firebase.signInAnonymously(fb.auth);
-                        }
+                        const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                        if (token) await fb.firebase.signInWithCustomToken(fb.auth, token);
+                        else await fb.firebase.signInAnonymously(fb.auth);
                         
                         fb.firebase.onAuthStateChanged(fb.auth, (u) => {
-                            if (u) {
-                                setUser(u);
-                                setLoading(false);
-                            }
+                            setUser(u);
+                            setLoading(false);
                         });
-                    } catch (err) {
-                        console.error("Authentication Error:", err);
-                        // Show friendly error to user
+                    } catch (e) {
+                        console.error("Auth Fail", e);
                         setLoading(false);
                     }
                 };
                 initAuth();
             }, [fb]);
 
-            // Real-time listener for results
             useEffect(() => {
                 if (!fb || !user) return;
-                
-                // Use strict path as per Rule 1
-                const resultsPath = fb.firebase.collection(fb.db, 'artifacts', fb.appId, 'public', 'data', 'exam_results');
-                
-                const unsub = fb.firebase.onSnapshot(resultsPath, (snap) => {
-                    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    // Client-side filtering/sorting as per Rule 2
-                    setAllResults(docs);
-                    
-                    const myResult = docs.find(r => r.mobile === regData.mobile || r.uid === user.uid);
-                    if (myResult) setExamStatus(myResult);
-                }, (error) => {
-                    console.error("Firestore Error:", error);
-                });
-                
-                return () => unsub();
-            }, [fb, user, regData.mobile]);
+                const q = fb.firebase.collection(fb.db, 'artifacts', fb.appId, 'public', 'data', 'exam_results');
+                return fb.firebase.onSnapshot(q, (snap) => {
+                    setResults(snap.docs.map(d => ({id: d.id, ...d.data()})));
+                }, (err) => console.error("Firestore Listen Error", err));
+            }, [fb, user]);
 
-            const handleRegister = (e) => {
+            const handleStart = (e) => {
                 e.preventDefault();
-                const cleanMobile = regData.mobile.trim();
-                if (!fb.ALLOWED_NUMBERS.includes(cleanMobile)) {
-                    alert("ക്ഷമിക്കണം, ഈ മൊബൈൽ നമ്പർ രജിസ്റ്റർ ചെയ്തിട്ടില്ല.");
+                const num = regData.mobile.trim();
+                if (!ALLOWED_NUMBERS.includes(num)) {
+                    alert("ക്ഷമിക്കണം, ഈ മൊബൈൽ നമ്പർ ലിസ്റ്റിൽ ഇല്ല.");
                     return;
                 }
                 setView('quiz');
             };
 
-            const handleAnswer = (idx) => {
-                setAnswers({ ...answers, [currentQ]: idx });
-            };
-
             const submitExam = async () => {
-                if (!user) return;
-                let correctCount = 0;
-                fb.QUESTIONS.forEach((q, i) => {
-                    if (answers[i] === q.correct) correctCount++;
-                });
-
-                const payload = {
-                    uid: user.uid,
-                    name: regData.name,
-                    place: regData.place,
-                    mobile: regData.mobile,
-                    answers: JSON.stringify(answers), // Serialize complex objects
-                    score: correctCount,
-                    total: fb.QUESTIONS.length,
-                    grace: 0,
-                    isApproved: false,
-                    timestamp: fb.firebase.serverTimestamp()
-                };
-
+                let score = 0;
+                QUESTIONS.forEach((q, i) => { if(answers[i] === q.correct) score++; });
+                
                 try {
-                    await fb.firebase.addDoc(fb.firebase.collection(fb.db, 'artifacts', fb.appId, 'public', 'data', 'exam_results'), payload);
-                    setView('result');
-                } catch (err) {
-                    console.error("Submission Error:", err);
+                    await fb.firebase.addDoc(fb.firebase.collection(fb.db, 'artifacts', fb.appId, 'public', 'data', 'exam_results'), {
+                        uid: user.uid,
+                        name: regData.name,
+                        place: regData.place,
+                        mobile: regData.mobile,
+                        score,
+                        total: QUESTIONS.length,
+                        timestamp: fb.firebase.serverTimestamp(),
+                        isApproved: false
+                    });
+                    setView('done');
+                } catch (e) {
+                    alert("Submission failed. Check connection.");
                 }
             };
 
-            const approveResult = async (id, grace = 0) => {
-                if (!user) return;
-                const docRef = fb.firebase.doc(fb.db, 'artifacts', fb.appId, 'public', 'data', 'exam_results', id);
-                await fb.firebase.updateDoc(docRef, { isApproved: true, grace: parseInt(grace) || 0 });
-            };
-
             if (loading) return (
-                <div className="h-screen flex flex-col items-center justify-center bg-slate-50">
-                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <div className="h-screen flex flex-col items-center justify-center">
+                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p className="font-bold text-slate-600">പോർട്ടൽ ലോഡ് ചെയ്യുന്നു...</p>
                 </div>
             );
 
             if (view === 'register') return (
                 <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="glass-card p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl animate-fade-in">
-                        <div className="text-center mb-8">
-                            <h1 className="text-3xl font-black text-slate-800 mb-2">വെളിച്ചം ഓൺലൈൻ</h1>
-                            <p className="text-slate-500 font-bold">പരീക്ഷാ രജിസ്ട്രേഷൻ</p>
-                        </div>
-                        <form onSubmit={handleRegister} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1">പേര്</label>
-                                <input required type="text" value={regData.name} onChange={e => setRegData({...regData, name: e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 border-0 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="നിങ്ങളുടെ പേര്" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1">സ്ഥലം</label>
-                                <input required type="text" value={regData.place} onChange={e => setRegData({...regData, place: e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 border-0 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="നിങ്ങളുടെ സ്ഥലം" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-1">മൊബൈൽ നമ്പർ (966-XXXXXXXXX)</label>
-                                <input required type="text" value={regData.mobile} onChange={e => setRegData({...regData, mobile: e.target.value})} className="w-full p-4 rounded-2xl bg-slate-50 border-0 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="966-XXXXXXXXX" />
-                            </div>
-                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white p-5 rounded-2xl font-black transition-all shadow-lg shadow-blue-200">പരീക്ഷ ആരംഭിക്കുക</button>
+                    <div className="glass-card p-8 rounded-[2rem] w-full max-w-md shadow-xl animate-fade-in">
+                        <h1 className="text-2xl font-black text-center text-slate-800 mb-6">വെളിച്ചം ഓൺലൈൻ പരീക്ഷ</h1>
+                        <form onSubmit={handleStart} className="space-y-4">
+                            <input required placeholder="പേര്" className="w-full p-4 rounded-xl bg-slate-50 border-0" value={regData.name} onChange={e => setRegData({...regData, name: e.target.value})} />
+                            <input required placeholder="സ്ഥലം" className="w-full p-4 rounded-xl bg-slate-50 border-0" value={regData.place} onChange={e => setRegData({...regData, place: e.target.value})} />
+                            <input required placeholder="മൊബൈൽ (966-XXXXXXXXX)" className="w-full p-4 rounded-xl bg-slate-50 border-0" value={regData.mobile} onChange={e => setRegData({...regData, mobile: e.target.value})} />
+                            <button type="submit" className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg">പരീക്ഷ ആരംഭിക്കുക</button>
                         </form>
-                        <button onClick={() => setView('admin')} className="w-full mt-4 text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors">Admin Dashboard</button>
+                        <button onClick={() => setView('admin')} className="w-full mt-4 text-slate-400 text-sm font-bold">Admin Dashboard</button>
                     </div>
                 </div>
             );
 
             if (view === 'quiz') return (
-                <div className="min-h-screen p-4 md:p-10 flex flex-col items-center">
-                    <div className="w-full max-w-2xl mb-6 flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
-                        <span className="font-black text-blue-600">ചോദ്യം {currentQ + 1} / {fb.QUESTIONS.length}</span>
-                        <div className="flex gap-2">
-                            {fb.QUESTIONS.map((_, i) => (
-                                <div key={i} className={`w-2 h-2 rounded-full ${i === currentQ ? 'bg-blue-600' : answers[i] !== undefined ? 'bg-green-400' : 'bg-slate-200'}`}></div>
-                            ))}
-                        </div>
+                <div className="min-h-screen p-4 flex flex-col items-center">
+                    <div className="w-full max-w-2xl bg-white p-4 rounded-2xl mb-4 flex justify-between font-black text-blue-600">
+                        <span>ചോദ്യം {currentQ + 1} / {QUESTIONS.length}</span>
                     </div>
-                    
-                    <div className="glass-card p-8 md:p-12 rounded-[3rem] w-full max-w-2xl shadow-xl animate-fade-in mb-8">
-                        <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-10 leading-relaxed">
-                            {fb.QUESTIONS[currentQ].q}
-                        </h2>
-                        <div className="space-y-4">
-                            {fb.QUESTIONS[currentQ].options.map((opt, idx) => (
-                                <button key={idx} onClick={() => handleAnswer(idx)} className={`w-full text-left p-5 rounded-2xl font-bold transition-all border-2 flex items-center gap-4 ${answers[currentQ] === idx ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-slate-50 border-transparent text-slate-600 hover:bg-slate-100'}`}>
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] ${answers[currentQ] === idx ? 'bg-white border-white text-blue-600' : 'border-slate-300 text-slate-400'}`}>
-                                        {String.fromCharCode(65 + idx)}
-                                    </div>
-                                    {opt}
+                    <div className="glass-card p-6 md:p-10 rounded-[2.5rem] w-full max-w-2xl shadow-lg mb-6">
+                        <h2 className="text-xl font-bold mb-8 leading-relaxed">{QUESTIONS[currentQ].q}</h2>
+                        <div className="space-y-3">
+                            {QUESTIONS[currentQ].options.map((o, i) => (
+                                <button key={i} onClick={() => setAnswers({...answers, [currentQ]: i})} className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${answers[currentQ] === i ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-50 border-transparent text-slate-600'}`}>
+                                    {o}
                                 </button>
                             ))}
                         </div>
                     </div>
-
-                    <div className="w-full max-w-2xl flex justify-between gap-4">
-                        <button disabled={currentQ === 0} onClick={() => setCurrentQ(currentQ - 1)} className="flex-1 bg-white text-slate-800 p-5 rounded-2xl font-black disabled:opacity-50 transition-opacity">Back</button>
-                        {currentQ < fb.QUESTIONS.length - 1 ? (
-                            <button onClick={() => setCurrentQ(currentQ + 1)} className="flex-1 bg-blue-600 text-white p-5 rounded-2xl font-black shadow-lg shadow-blue-100">Next Question</button>
+                    <div className="w-full max-w-2xl flex gap-4">
+                        <button disabled={currentQ === 0} onClick={() => setCurrentQ(currentQ - 1)} className="flex-1 bg-white p-4 rounded-xl font-bold">Back</button>
+                        {currentQ < QUESTIONS.length - 1 ? (
+                            <button onClick={() => setCurrentQ(currentQ + 1)} className="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold">Next</button>
                         ) : (
-                            <button onClick={() => setView('review')} className="flex-1 bg-green-600 text-white p-5 rounded-2xl font-black shadow-lg shadow-green-100">Review & Submit</button>
+                            <button onClick={submitExam} className="flex-1 bg-green-600 text-white p-4 rounded-xl font-bold">Submit</button>
                         )}
                     </div>
                 </div>
             );
 
-            if (view === 'review') return (
-                <div className="min-h-screen p-4 md:p-10 max-w-3xl mx-auto animate-fade-in">
-                    <h2 className="text-3xl font-black text-slate-800 mb-8">Review Answers</h2>
-                    {fb.QUESTIONS.map((q, i) => (
-                        <div key={i} className="bg-white p-6 rounded-2xl mb-4 border border-slate-100 flex justify-between items-center cursor-pointer hover:border-blue-300 transition-all" onClick={() => { setCurrentQ(i); setView('quiz'); }}>
-                            <div className="flex-1 mr-4">
-                                <span className="text-xs font-black text-blue-500 uppercase">Question {i+1}</span>
-                                <p className="font-bold text-slate-700 line-clamp-1">{q.q}</p>
-                            </div>
-                            <div className="shrink-0 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-black whitespace-nowrap">
-                                {answers[i] !== undefined ? `Option ${String.fromCharCode(65 + answers[i])}` : 'Skipped'}
-                            </div>
-                        </div>
-                    ))}
-                    <button onClick={submitExam} className="w-full bg-green-600 text-white p-6 rounded-[2rem] font-black text-xl mt-8 shadow-xl shadow-green-100 active:scale-95 transition-transform">SUBMIT FINAL ANSWERS</button>
-                </div>
-            );
-
-            if (view === 'result') return (
-                <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="glass-card p-10 rounded-[3rem] w-full max-w-md text-center shadow-2xl animate-fade-in">
-                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                        </div>
-                        <h2 className="text-3xl font-black text-slate-800 mb-4">പരീക്ഷ പൂർത്തിയായി!</h2>
-                        <p className="text-slate-500 font-bold mb-8">നിങ്ങളുടെ ഉത്തരങ്ങൾ സമർപ്പിച്ചു. അഡ്മിൻ അംഗീകരിച്ച ശേഷം ഫലം ഇവിടെ കാണാം.</p>
-                        
-                        {examStatus?.isApproved && (
-                            <div className="bg-blue-50 p-6 rounded-3xl mb-8 animate-fade-in border border-blue-100">
-                                <div className="text-5xl font-black text-blue-600 mb-2">{(examStatus.score + (examStatus.grace || 0))} / {examStatus.total}</div>
-                                <div className="text-sm font-bold text-slate-400">ആകെ മാർക്ക് (ഗ്രേസ് ഉൾപ്പെടെ)</div>
-                                <div className="mt-6 flex justify-between items-center bg-white/50 p-3 rounded-xl border border-blue-50">
-                                    <div className="text-left">
-                                        <div className="text-[10px] font-black uppercase text-slate-400">Grace Mark</div>
-                                        <div className="font-bold text-blue-500">{examStatus.grace || 0}</div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-[10px] font-black uppercase text-slate-400">Percentage</div>
-                                        <div className="font-bold text-green-500">{(((examStatus.score + (examStatus.grace || 0)) / examStatus.total) * 100).toFixed(1)}%</div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black">ലോഗ് ഔട്ട്</button>
+            if (view === 'done') return (
+                <div className="h-screen flex items-center justify-center p-4 text-center">
+                    <div className="glass-card p-10 rounded-[3rem] shadow-2xl">
+                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">✓</div>
+                        <h2 className="text-2xl font-black mb-2">സമർപ്പിച്ചു!</h2>
+                        <p className="text-slate-500 mb-6">നിങ്ങളുടെ ഉത്തരങ്ങൾ ലഭിച്ചു. ഫലം പിന്നീട് അറിയിക്കുന്നതാണ്.</p>
+                        <button onClick={() => window.location.reload()} className="bg-slate-800 text-white px-8 py-3 rounded-xl font-bold">Close</button>
                     </div>
                 </div>
             );
 
             if (view === 'admin') return (
-                <div className="min-h-screen p-4 md:p-10 max-w-5xl mx-auto animate-fade-in">
-                    <div className="flex justify-between items-center mb-10">
-                        <h2 className="text-3xl font-black text-slate-800">Admin Dashboard</h2>
-                        <button onClick={() => setView('register')} className="text-blue-600 font-bold px-4 py-2 hover:bg-blue-50 rounded-xl transition-colors">Exit Dashboard</button>
+                <div className="p-4 max-w-4xl mx-auto">
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-2xl font-black">Admin Dashboard</h1>
+                        <button onClick={() => setView('register')} className="text-blue-600 font-bold underline">Exit</button>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                            <div className="text-slate-400 font-black text-xs uppercase tracking-wider mb-2">Total Participants</div>
-                            <div className="text-3xl font-black text-slate-800">{allResults.length}</div>
-                        </div>
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                            <div className="text-slate-400 font-black text-xs uppercase tracking-wider mb-2">Pending Approvals</div>
-                            <div className="text-3xl font-black text-orange-500">{allResults.filter(r => !r.isApproved).length}</div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50 border-b border-slate-100">
-                                    <tr>
-                                        <th className="p-5 font-black text-slate-500 uppercase text-[10px]">Student Details</th>
-                                        <th className="p-5 font-black text-slate-500 uppercase text-[10px]">Contact</th>
-                                        <th className="p-5 font-black text-slate-500 uppercase text-[10px]">Score</th>
-                                        <th className="p-5 font-black text-slate-500 uppercase text-[10px]">Grace</th>
-                                        <th className="p-5 font-black text-slate-500 uppercase text-[10px]">Action</th>
+                    <div className="bg-white rounded-3xl shadow overflow-hidden">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50 border-b">
+                                <tr>
+                                    <th className="p-4">Name</th>
+                                    <th className="p-4">Score</th>
+                                    <th className="p-4">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {results.map(r => (
+                                    <tr key={r.id} className="border-b">
+                                        <td className="p-4"><div>{r.name}</div><div className="text-xs text-slate-400">{r.mobile}</div></td>
+                                        <td className="p-4 font-black">{r.score} / {r.total}</td>
+                                        <td className="p-4 text-xs">{r.timestamp?.toDate().toLocaleString()}</td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {allResults.length === 0 ? (
-                                        <tr><td colSpan="5" className="p-10 text-center font-bold text-slate-400">No results found yet.</td></tr>
-                                    ) : allResults.map(res => (
-                                        <tr key={res.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
-                                            <td className="p-5">
-                                                <div className="font-bold text-slate-800">{res.name}</div>
-                                                <div className="text-[10px] text-slate-400 font-black uppercase">{res.place}</div>
-                                            </td>
-                                            <td className="p-5 font-bold text-slate-600 text-sm whitespace-nowrap">{res.mobile}</td>
-                                            <td className="p-5">
-                                                <span className="font-black text-blue-600">{res.score}</span>
-                                                <span className="text-slate-300 mx-1">/</span>
-                                                <span className="text-slate-400 font-bold">{res.total}</span>
-                                            </td>
-                                            <td className="p-5">
-                                                <input 
-                                                    type="number" 
-                                                    placeholder="0"
-                                                    disabled={res.isApproved}
-                                                    id={`grace-${res.id}`} 
-                                                    className="w-16 p-2 rounded-lg bg-slate-100 border-0 outline-none text-center font-bold focus:ring-2 focus:ring-blue-500 disabled:opacity-50" 
-                                                />
-                                            </td>
-                                            <td className="p-5">
-                                                {res.isApproved ? (
-                                                    <div className="flex items-center gap-2 text-green-600 font-black text-xs">
-                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                                                        Approved ({res.grace})
-                                                    </div>
-                                                ) : (
-                                                    <button 
-                                                        onClick={() => approveResult(res.id, document.getElementById(`grace-${res.id}`).value)} 
-                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-blue-100 transition-all"
-                                                    >
-                                                        Approve
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             );
