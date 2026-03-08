@@ -51,6 +51,29 @@
             { q: "മുൻസമുദായങ്ങൾക്ക് ബാധിച്ചതു പോലെയുള്ള ഐഹിക ശിക്ഷകളെ നിങ്ങൾ സൂക്ഷിക്കണം, വരാനിരിക്കുന്ന പരലോക ശിക്ഷയെയും നിങ്ങൾ സൂക്ഷിക്കണം, എന്നാൽ നിങ്ങൾ ................", a: "സൂക്ഷ്മതയുള്ളവരായേക്കാം", b: "വിജയികളായേക്കാം", c: "കരുണ ചെയ്യപ്പെട്ടേക്കാം", d: "നേർവഴി കാണിക്കപ്പെട്ടേക്കാം", correct: "c" }
         ];
 
+        window.renderStudentAnswers = (docData) => {
+            const container = document.getElementById('student-answers-list');
+            if(container) {
+                container.innerHTML = questions.map((q, i) => {
+                    const selected = docData.selections[i];
+                    const isCorrect = selected === q.correct;
+                    const optLetter = selected ? selected.toUpperCase() : 'N/A';
+                    const optText = selected && q[selected] ? q[selected] : 'ഉത്തരം നൽകിയിട്ടില്ല';
+                    
+                    return `
+                    <div class="p-4 bg-white rounded-lg mb-3 border ${isCorrect ? 'border-green-200' : 'border-red-200'} shadow-sm text-left">
+                        <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
+                        <p class="text-xs mt-2 ${isCorrect ? 'text-green-700' : 'text-red-700'} font-semibold">
+                            നിങ്ങളുടെ ഉത്തരം: ${optLetter}. ${optText}
+                            ${isCorrect ? ' <span class="text-green-500 ml-1">✓</span>' : ' <span class="text-red-500 ml-1">✗</span>'}
+                        </p>
+                        ${!isCorrect ? `<p class="text-xs mt-1 text-green-700 font-semibold">ശരിയായ ഉത്തരം: ${q.correct.toUpperCase()}. ${q[q.correct]}</p>` : ''}
+                    </div>
+                    `;
+                }).join('');
+            }
+        };
+
         window.startQuiz = async () => {
             const name = document.getElementById('name').value.trim();
             const place = document.getElementById('place').value.trim();
@@ -71,6 +94,7 @@
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('student-result-screen').classList.remove('hidden');
                     document.getElementById('student-score-display').innerText = `${docData.score}/10`;
+                    renderStudentAnswers(docData);
                     return;
                 } else {
                     return alert("നിങ്ങൾ ഇതിനകം ക്വിസ് പൂർത്തിയാക്കി കഴിഞ്ഞു. റിസൾട്ട് അഡ്മിൻ അപ്രൂവലിനായി കാത്തിരിക്കുന്നു.");
@@ -299,8 +323,10 @@
             <div id="student-result-screen" class="hidden text-center py-10">
                 <h2 class="text-2xl font-bold text-blue-800 mb-4">നിങ്ങളുടെ റിസൾട്ട്</h2>
                 <div class="text-6xl font-bold text-blue-600 mb-2" id="student-score-display">0/10</div>
-                <p class="text-slate-600 font-medium">അഭിനന്ദനങ്ങൾ!</p>
-                <button onclick="location.reload()" class="mt-8 text-blue-600 text-xs font-bold underline">Home</button>
+                <p class="text-slate-600 font-medium mb-6">അഭിനന്ദനങ്ങൾ!</p>
+                <div id="student-answers-list" class="max-h-[400px] overflow-y-auto mb-6 pr-2"></div>
+                <!-- We wrap the home button in a flex container so it looks like a nice solid button -->
+                <button onclick="location.reload()" class="w-full bg-slate-200 text-slate-700 p-5 rounded-2xl font-bold shadow-sm transition-colors hover:bg-slate-300">Home</button>
             </div>
         </div>
     </div>
