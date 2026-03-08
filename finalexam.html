@@ -237,7 +237,10 @@
             document.getElementById('review-screen').classList.remove('hidden');
             const list = document.getElementById('review-list');
             list.innerHTML = questions.map((q, i) => `
-                <div class="p-4 bg-white rounded-lg mb-3 border border-blue-100 shadow-sm">
+                <div class="p-4 bg-white rounded-lg mb-3 border border-blue-100 shadow-sm relative pr-14">
+                    <button onclick="goToQuestionFromReview(${i})" class="absolute top-4 right-4 h-8 w-8 rounded-full bg-blue-100 text-blue-800 font-bold flex items-center justify-center shadow-sm hover:bg-blue-200 transition-colors cursor-pointer border border-blue-200" title="ചോദ്യത്തിലേക്ക് തിരികെ പോവുക">
+                        ${selections[i] ? selections[i].toUpperCase() : '?'}
+                    </button>
                     <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
                     <select onchange="updateSelection(${i}, this.value)" class="mt-2 w-full text-xs border border-blue-200 p-2 rounded-lg bg-blue-50 text-blue-900">
                         <option value="a" ${selections[i]==='a'?'selected':''}>A. ${q.a}</option>
@@ -249,7 +252,17 @@
             `).join('');
         };
 
-        window.updateSelection = (index, val) => { selections[index] = val; };
+        window.goToQuestionFromReview = (index) => {
+            currentQ = index;
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            renderQuestion();
+        };
+
+        window.updateSelection = (index, val) => { 
+            selections[index] = val; 
+            showReview(); // Re-render to update the top-right button letter
+        };
 
         window.submitQuiz = async (autoSubmit = false) => {
             if (timerInterval) clearInterval(timerInterval);
