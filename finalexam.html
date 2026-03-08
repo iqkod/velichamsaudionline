@@ -236,20 +236,31 @@
             document.getElementById('quiz-screen').classList.add('hidden');
             document.getElementById('review-screen').classList.remove('hidden');
             const list = document.getElementById('review-list');
-            list.innerHTML = questions.map((q, i) => `
-                <div class="p-4 bg-white rounded-lg mb-3 border border-blue-100 shadow-sm relative pr-14">
-                    <button onclick="goToQuestionFromReview(${i})" class="absolute top-4 right-4 h-8 w-8 rounded-full bg-blue-100 text-blue-800 font-bold flex items-center justify-center shadow-sm hover:bg-blue-200 transition-colors cursor-pointer border border-blue-200" title="ചോദ്യത്തിലേക്ക് തിരികെ പോവുക">
-                        ${selections[i] ? selections[i].toUpperCase() : '?'}
+            list.innerHTML = questions.map((q, i) => {
+                const isSelected = !!selections[i];
+                const cardClass = isSelected 
+                    ? "p-4 bg-white rounded-lg mb-3 border border-blue-100 shadow-sm relative pr-14"
+                    : "p-4 bg-red-50 rounded-lg mb-3 border border-red-300 shadow-sm relative pr-14";
+                const btnClass = isSelected
+                    ? "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200"
+                    : "bg-red-100 text-red-800 border-red-300 hover:bg-red-200 animate-pulse";
+                
+                return `
+                <div class="${cardClass}">
+                    <button onclick="goToQuestionFromReview(${i})" class="absolute top-4 right-4 h-8 w-8 rounded-full font-bold flex items-center justify-center shadow-sm transition-colors cursor-pointer border ${btnClass}" title="ചോദ്യത്തിലേക്ക് തിരികെ പോവുക">
+                        ${isSelected ? selections[i].toUpperCase() : '?'}
                     </button>
                     <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
-                    <select onchange="updateSelection(${i}, this.value)" class="mt-2 w-full text-xs border border-blue-200 p-2 rounded-lg bg-blue-50 text-blue-900">
+                    <select onchange="updateSelection(${i}, this.value)" class="mt-2 w-full text-xs border ${isSelected ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-red-200 bg-white text-red-900'} p-2 rounded-lg">
+                        <option value="" disabled ${!isSelected ? 'selected' : ''}>-- ഉത്തരം തിരഞ്ഞെടുക്കുക --</option>
                         <option value="a" ${selections[i]==='a'?'selected':''}>A. ${q.a}</option>
                         <option value="b" ${selections[i]==='b'?'selected':''}>B. ${q.b}</option>
                         <option value="c" ${selections[i]==='c'?'selected':''}>C. ${q.c}</option>
                         <option value="d" ${selections[i]==='d'?'selected':''}>D. ${q.d}</option>
                     </select>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         };
 
         window.goToQuestionFromReview = (index) => {
