@@ -1,273 +1,194 @@
-import React, { useState, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  onSnapshot, 
-  query,
-  getDocs
-} from 'firebase/firestore';
-import { 
-  getAuth, 
-  signInAnonymously, 
-  signInWithCustomToken, 
-  onAuthStateChanged 
-} from 'firebase/auth';
-import { 
-  ClipboardCheck, 
-  Send, 
-  User, 
-  CheckCircle2, 
-  AlertCircle,
-  Loader2
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ദ ലൈറ്റ് ജൂനിയേഴ്സ് - ക്വിസ് പോർട്ടൽ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap');
+        body { font-family: 'Manjari', sans-serif; }
+        .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .teal-gradient { background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); }
+    </style>
 
-// Firebase Configuration
-// NOTE: Ensure these environment variables are provided by the system
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'velicham-exam-app';
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, orderBy, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-const questions = [
-  {
-    id: 1,
-    question: "ഇന്ത്യയുടെ തലസ്ഥാനം ഏതാണ്?",
-    options: ["മുംബൈ", "ഡൽഹി", "കൊൽക്കത്ത", "ചെന്നൈ"],
-    answer: "ഡൽഹി"
-  },
-  {
-    id: 2,
-    question: "കേരളത്തിന്റെ ഔദ്യോഗിക ഭാഷ ഏതാണ്?",
-    options: ["തമിഴ്", "കന്നഡ", "മലയാളം", "തെലുങ്ക്"],
-    answer: "മലയാളം"
-  }
-];
+        // Configuration from your screenshot
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPHM4eHRhRPyA-JFDXMrbuFIeMvnGByts",
+            authDomain: "velichamsaudionline-66fc0.firebaseapp.com",
+            projectId: "velichamsaudionline-66fc0",
+            storageBucket: "velichamsaudionline-66fc0.firebasestorage.app",
+            messagingSenderId: "414471469839",
+            appId: "1:414471469839:web:d4ad0bd9d8c31dfe85dc7a",
+            measurementId: "G-71MF3VPLGG"
+        };
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('');
-  const [isStarted, setIsStarted] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [error, setError] = useState(null);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = "thelightjuniors";
 
-  // Auth initialization (Rule 3)
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (err) {
-        console.error("Auth Error:", err);
-        setError("Firebase Authentication പരാജയപ്പെട്ടു.");
-      }
-    };
+        let studentData = { name: '', place: '', mobile: '' };
+        let studentSelections = Array(10).fill(null);
+        let currentQuestion = 0;
+        let timeLeft = 600; 
+        let timerInterval = null;
+        let isSubmitted = false;
 
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+        onAuthStateChanged(auth, (u) => { /* Auth state handled */ });
+        const initAuth = async () => { try { await signInAnonymously(auth); } catch (e) { console.error("Auth failed"); } };
+        initAuth();
 
-  const handleStart = () => {
-    if (userName.trim()) {
-      setIsStarted(true);
-    }
-  };
+        const questions = [
+            { q: "സ്വർഗ്ഗവാസികൾക്ക് കുടിക്കാൻ നൽകുന്ന പാനീയത്തിൽ ചേർത്തിട്ടുള്ളത് എന്താണ്?", a: "ശുദ്ധമായ പാനീയം", b: "ഇഞ്ചി ചേർത്ത പാനീയം", c: "കർപ്പൂരം ചേർത്ത പാനീയം", d: "കയ്പ്പുള്ള പാനീയം", correct: "b" },
+            { q: "സ്വർഗ്ഗത്തിലെ അതിമനോഹരമായ നീരുറവയുടെ പേരെന്താണ്?", a: "കൗസർ", b: "സംസം", c: "തസ്നീം", d: "സൽസബീൽ", correct: "d" },
+            { q: "സ്വർഗ്ഗത്തിലെ 'മാറ്റമില്ലാത്ത ബാലന്മാർ' എന്നതുകൊണ്ട് ഉദ്ദേശിക്കുന്നത്:", a: "അവർ സ്വർഗ്ഗത്തിൽ സ്ഥിരമായി നിലനിൽക്കുന്നവരാണ്", b: "അവർക്ക് പ്രായം കൂടുകയോ മാറ്റം വരികയോ ഇല്ല", c: "അവർ അതീവ സുന്ദരന്മാരാണ്", d: "മുകളിൽ പറഞ്ഞവയെല്ലാം", correct: "d" },
+            { q: "സ്വർഗ്ഗത്തിലേക്ക് നോക്കിയാൽ നിങ്ങൾ എന്താണ് കാണുക?", a: "ഇരുട്ടും ഭയവും", b: "ചങ്ങലകളും അഗ്നിയും", c: "അനുഗ്രഹങ്ങളും വലിയൊരു സാമ്രാജ്യവും", d: "ശൂന്യമായ തോട്ടങ്ങൾ", correct: "c" },
+            { q: "സ്വർഗ്ഗവാസികൾ ധരിക്കുന്ന വസ്ത്രങ്ങൾ ഏതാണ്?", a: "വെളുത്ത പരുത്തി വസ്ത്രങ്ങൾ", b: "ചുവന്ന കമ്പിളി വസ്ത്രങ്ങൾ", c: "നീല ലിനൻ വസ്ത്രങ്ങൾ", d: "പച്ചനിറത്തിലുള്ള സിൽക്ക് വസ്ത്രങ്ങൾ", correct: "d" },
+            { q: "സ്വർഗ്ഗവാസികളെ സംബന്ധിച്ച് താഴെ പറയുന്നവയിൽ ശരിയായത് ഏതാണ്?", a: "പച്ച പട്ടു വസ്ത്രങ്ങൾ", b: "വെള്ളി വളകൾ ധരിക്കുന്നു", c: "ശുദ്ധമായ പാനീയം ലഭിക്കുന്നു", d: "മുകളിൽ പറഞ്ഞവയെല്ലാം", correct: "d" },
+            { q: "സ്വർഗ്ഗത്തിലെ 'ശുദ്ധമായ പാനീയം' എന്നാൽ:", a: "മാലിന്യങ്ങളില്ലാത്തത്", b: "രുചിയുള്ളതെങ്കിലും അശുദ്ധമായത്", c: "ഹൃദയങ്ങളെ ശുദ്ധീകരിക്കുന്നത്", d: "A യും C യും", correct: "d" },
+            { q: "പൂരിപ്പിക്കുക: 'രാവിലെയും വൈകുന്നേരവും നിങ്ങളുടെ നാഥന്റെ ......................... സ്മരിക്കുക'", a: "നാമം", b: "മഹത്വം", c: "കാരുണ്യം", d: "ശിക്ഷ", correct: "a" },
+            { q: "സത്യനിഷേധികൾ പരലോകത്തെ ശ്രദ്ധിക്കാത്തത് എന്തുകൊണ്ട്?", a: "അവർ ഇഹലോകത്തെ സ്നേഹിക്കുന്നു", b: "അവർ പരലോകത്തെ സ്നേഹിക്കുന്നു", c: "അവർക്ക് പുനരുത്ഥാനത്തെ ഭയമാണ്", d: "അവർ അല്ലാഹുവിനെ ആരാധിക്കുന്നു", correct: "a" },
+            { q: "പുനരുത്ഥാന ദിവസത്തിന്റെ ദൈർഘ്യം എത്രയാണ്?", a: "അനന്തം", b: "അൻപത് വർഷം", c: "നിശ്ചയിച്ചിട്ടില്ല", d: "അൻപതിനായിരം വർഷം", correct: "d" }
+        ];
 
-  const handleAnswer = (option) => {
-    setAnswers({ ...answers, [currentQuestion]: option });
-  };
+        // UI Functions Logic
+        window.startQuiz = async () => {
+            const name = document.getElementById('name').value.trim();
+            const place = document.getElementById('place').value.trim();
+            const mobile = document.getElementById('mobile').value.trim();
+            if(!name || !place || !mobile) return alert("ദയവായി എല്ലാ വിവരങ്ങളും നൽകുക.");
 
-  const handleSubmit = async () => {
-    if (!user) {
-      setError("ലോഗിൻ ചെയ്തിട്ടില്ല. ദയവായി കാത്തിരിക്കുക.");
-      return;
-    }
+            studentData = { name, place, mobile, approved: false };
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            startTimer();
+            renderQuestion();
+        };
 
-    try {
-      setLoading(true);
-      // Calculate score
-      let score = 0;
-      questions.forEach((q, index) => {
-        if (answers[index] === q.answer) score++;
-      });
+        const startTimer = () => {
+            timerInterval = setInterval(() => {
+                if (timeLeft <= 0) { clearInterval(timerInterval); submitResult(); return; }
+                timeLeft--;
+                const min = Math.floor(timeLeft / 60);
+                const sec = timeLeft % 60;
+                document.getElementById('timer-display').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+            }, 1000);
+        };
 
-      // Firestore Path (Rule 1)
-      const resultsRef = collection(db, 'artifacts', appId, 'public', 'data', 'exam_results');
-      
-      await addDoc(resultsRef, {
-        name: userName,
-        score: score,
-        total: questions.length,
-        timestamp: new Date().toISOString(),
-        userId: user.uid
-      });
+        const renderQuestion = () => {
+            const q = questions[currentQuestion];
+            document.getElementById('q-title').innerText = `ചോദ്യം ${currentQuestion + 1} / 10`;
+            document.getElementById('q-text').innerText = q.q;
+            ['a','b','c','d'].forEach(l => {
+                const btn = document.getElementById('btn-opt-' + l);
+                document.getElementById('opt-' + l).innerText = q[l];
+                btn.className = studentSelections[currentQuestion] === l 
+                    ? "w-full text-left p-4 border-2 border-teal-700 bg-teal-700 text-white rounded-xl flex items-center gap-4"
+                    : "w-full text-left p-4 border-2 border-slate-100 bg-white text-slate-700 rounded-xl flex items-center gap-4";
+            });
+            document.getElementById('progress-bar').style.width = `${(currentQuestion + 1) * 10}%`;
+        };
 
-      setIsSubmitted(true);
-    } catch (err) {
-      console.error("Submission Error:", err);
-      setError("ഫലം സേവ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+        window.selectOption = (opt) => { studentSelections[currentQuestion] = opt; renderQuestion(); };
+        window.goNext = () => {
+            if (studentSelections[currentQuestion] === null) return alert("ദയവായി ഒരു ഉത്തരം തിരഞ്ഞെടുക്കുക.");
+            if (currentQuestion < 9) { currentQuestion++; renderQuestion(); } 
+            else { showReview(); }
+        };
 
-  if (loading && !isStarted) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
-        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-        <p className="mt-4 font-medium text-slate-600">തയ്യാറെടുക്കുന്നു...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-        <h2 className="text-xl font-bold text-slate-800">Error</h2>
-        <p className="text-slate-600 text-center mt-2">{error}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg"
-        >
-          വീണ്ടും ശ്രമിക്കുക
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
-      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Header */}
-        <div className="bg-blue-600 p-6 text-white text-center">
-          <h1 className="text-2xl font-bold tracking-tight">വെളിച്ചം ഓൺലൈൻ പരീക്ഷ</h1>
-          <p className="text-blue-100 mt-1">നിങ്ങളുടെ അറിവ് പരിശോധിക്കൂ</p>
-        </div>
-
-        <div className="p-6 md:p-10">
-          {!isStarted ? (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User className="w-8 h-8 text-blue-600" />
+        const showReview = () => {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('review-screen').classList.remove('hidden');
+            const container = document.getElementById('review-list');
+            container.innerHTML = studentSelections.map((sel, i) => `
+                <div class="p-4 bg-white rounded-xl mb-2 shadow-sm border border-slate-100">
+                    <p class="text-xs font-bold text-teal-600">ചോദ്യം ${i+1}</p>
+                    <p class="font-bold text-sm">${questions[i].q}</p>
+                    <p class="text-xs mt-2">നിങ്ങൾ തിരഞ്ഞെടുത്തത്: <span class="font-bold">${sel ? questions[i][sel] : 'ഉത്തരം നൽകിയിട്ടില്ല'}</span></p>
                 </div>
-                <h2 className="text-xl font-semibold text-slate-800">സ്വാഗതം!</h2>
-                <p className="text-slate-500 text-sm mt-1">തുടങ്ങുന്നതിനായി പേര് നൽകുക</p>
-              </div>
-              
-              <input
-                type="text"
-                placeholder="നിങ്ങളുടെ പൂർണ്ണനാമം"
-                className="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-              />
-              
-              <button
-                disabled={!userName.trim()}
-                onClick={handleStart}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                പരീക്ഷ ആരംഭിക്കുക
-              </button>
-            </div>
-          ) : isSubmitted ? (
-            <div className="text-center py-8">
-              <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-12 h-12 text-green-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-800">അഭിനന്ദനങ്ങൾ, {userName}!</h2>
-              <p className="text-slate-600 mt-2">നിങ്ങളുടെ ഉത്തരങ്ങൾ വിജയകരമായി സമർപ്പിച്ചു.</p>
-              <div className="mt-8 p-6 bg-slate-50 rounded-2xl inline-block min-w-[200px]">
-                <p className="text-slate-500 uppercase tracking-wider text-xs font-bold">നിങ്ങളുടെ സ്കോർ</p>
-                <p className="text-4xl font-black text-blue-600 mt-1">
-                  {Object.keys(answers).filter(key => answers[key] === questions[key].answer).length} / {questions.length}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-8">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase">
-                  ചോദ്യം {currentQuestion + 1} / {questions.length}
-                </span>
-                <div className="flex gap-1">
-                  {questions.map((_, i) => (
-                    <div key={i} className={`h-1.5 w-6 rounded-full ${i <= currentQuestion ? 'bg-blue-600' : 'bg-slate-100'}`} />
-                  ))}
-                </div>
-              </div>
+            `).join('');
+        };
 
-              <h2 className="text-xl font-bold text-slate-800 leading-snug">
-                {questions[currentQuestion].question}
-              </h2>
+        window.submitResult = async () => {
+            if (isSubmitted) return;
+            isSubmitted = true;
+            const score = studentSelections.filter((sel, i) => sel === questions[i].correct).length;
+            await addDoc(collection(db, "artifacts", appId, "public", "data", "quiz_results"), {
+                ...studentData, score, selections: studentSelections, at: serverTimestamp()
+            });
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('finish-screen').classList.remove('hidden');
+        };
 
-              <div className="grid gap-3">
-                {questions[currentQuestion].options.map((option, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleAnswer(option)}
-                    className={`p-4 text-left rounded-xl border-2 transition-all ${
-                      answers[currentQuestion] === option
-                        ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
-                        : 'border-slate-100 hover:border-slate-200 text-slate-700'
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
+        window.goNext = window.goNext; 
+    </script>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 flex flex-col items-center">
 
-              <div className="flex gap-4 pt-4 border-t border-slate-100">
-                {currentQuestion > 0 && (
-                  <button
-                    onClick={() => setCurrentQuestion(currentQuestion - 1)}
-                    className="flex-1 py-4 text-slate-600 font-bold border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
-                  >
-                    മുൻപത്തെ ചോദ്യം
-                  </button>
-                )}
-                
-                {currentQuestion < questions.length - 1 ? (
-                  <button
-                    disabled={!answers[currentQuestion]}
-                    onClick={() => setCurrentQuestion(currentQuestion + 1)}
-                    className="flex-[2] bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-blue-100"
-                  >
-                    അടുത്ത ചോദ്യം
-                  </button>
-                ) : (
-                  <button
-                    disabled={!answers[currentQuestion] || loading}
-                    onClick={handleSubmit}
-                    className="flex-[2] bg-green-600 hover:bg-green-700 disabled:bg-slate-200 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-green-100 flex items-center justify-center gap-2"
-                  >
-                    {loading ? <Loader2 className="animate-spin" /> : <Send size={18} />}
-                    സമർപ്പിക്കുക
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+    <nav class="w-full max-w-xl flex justify-between items-center mb-6">
+        <div class="flex items-center gap-2 text-teal-800 font-bold text-sm">
+            <span class="w-8 h-8 rounded-lg bg-teal-800 text-white flex items-center justify-center">TLJ</span>
+            ക്വിസ് പോർട്ടൽ
         </div>
-      </div>
-      
-      <p className="text-center text-slate-400 text-xs mt-8">
-        User ID: {user?.uid} | App ID: {appId}
-      </p>
+        <div class="bg-teal-800 text-white px-4 py-1.5 rounded-full text-xs font-bold">
+            സമയം: <span id="timer-display">10:00</span>
+        </div>
+    </nav>
+
+    <div class="max-w-xl w-full glass-effect rounded-[2rem] shadow-xl overflow-hidden border border-white relative">
+        <div class="h-1.5 w-full teal-gradient"></div>
+        <div class="p-8">
+            
+            <div id="login-screen" class="space-y-5">
+                <div class="text-center mb-8">
+                    <h1 class="text-2xl font-bold text-teal-900">സ്വാഗതം</h1>
+                    <p class="text-slate-500 text-xs">തുടങ്ങുന്നതിനായി വിവരങ്ങൾ നൽകുക</p>
+                </div>
+                <input type="text" id="name" placeholder="പൂർണ്ണ നാമം" class="w-full p-4 bg-slate-100 border-none rounded-xl outline-none">
+                <input type="text" id="place" placeholder="സ്ഥലം" class="w-full p-4 bg-slate-100 border-none rounded-xl outline-none">
+                <input type="text" id="mobile" placeholder="മൊബൈൽ നമ്പർ" class="w-full p-4 bg-slate-100 border-none rounded-xl outline-none">
+                <button onclick="startQuiz()" class="w-full teal-gradient text-white p-4 rounded-xl font-bold shadow-lg">തുടങ്ങുക</button>
+            </div>
+
+            <div id="quiz-screen" class="hidden">
+                <h2 id="q-title" class="text-[10px] font-bold text-teal-600 uppercase mb-2"></h2>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full mb-6">
+                    <div id="progress-bar" class="teal-gradient h-full w-0 rounded-full transition-all"></div>
+                </div>
+                <h3 id="q-text" class="text-lg font-bold text-slate-800 mb-8 leading-relaxed"></h3>
+                <div class="space-y-3 mb-8">
+                    <button id="btn-opt-a" onclick="selectOption('a')" class="w-full text-left p-4 border-2 border-slate-100 rounded-xl flex items-center gap-4"><span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center font-bold">A</span><span id="opt-a" class="text-sm"></span></button>
+                    <button id="btn-opt-b" onclick="selectOption('b')" class="w-full text-left p-4 border-2 border-slate-100 rounded-xl flex items-center gap-4"><span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center font-bold">B</span><span id="opt-b" class="text-sm"></span></button>
+                    <button id="btn-opt-c" onclick="selectOption('c')" class="w-full text-left p-4 border-2 border-slate-100 rounded-xl flex items-center gap-4"><span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center font-bold">C</span><span id="opt-c" class="text-sm"></span></button>
+                    <button id="btn-opt-d" onclick="selectOption('d')" class="w-full text-left p-4 border-2 border-slate-100 rounded-xl flex items-center gap-4"><span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center font-bold">D</span><span id="opt-d" class="text-sm"></span></button>
+                </div>
+                <div class="text-right">
+                    <button onclick="goNext()" class="bg-teal-900 text-white px-8 py-3 rounded-lg font-bold text-xs">അടുത്തത്</button>
+                </div>
+            </div>
+
+            <div id="review-screen" class="hidden">
+                <h2 class="text-lg font-bold text-teal-900 mb-6 text-center">ഉത്തരങ്ങൾ പരിശോധിക്കുക</h2>
+                <div id="review-list" class="space-y-2 mb-8 max-h-[300px] overflow-y-auto"></div>
+                <button onclick="submitResult()" class="w-full teal-gradient text-white p-4 rounded-xl font-bold shadow-lg">സമർപ്പിക്കുക</button>
+            </div>
+
+            <div id="finish-screen" class="hidden text-center py-12">
+                <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center text-2xl mb-4 mx-auto">✓</div>
+                <h2 class="text-xl font-bold text-teal-900 mb-2">നന്ദി!</h2>
+                <p class="text-slate-500 text-sm mb-8">നിങ്ങളുടെ ഉത്തരങ്ങൾ സമർപ്പിച്ചു കഴിഞ്ഞു.</p>
+                <button onclick="location.reload()" class="bg-teal-900 text-white px-10 py-3 rounded-lg font-bold text-xs uppercase">ഹോം</button>
+            </div>
+
+        </div>
     </div>
-  );
-}
+</body>
+</html>
