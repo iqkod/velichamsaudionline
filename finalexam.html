@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Light Juniors - Quiz</title>
+    <title>വെളിച്ചം റമദാൻ 2026(VR2026) - Quiz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -11,6 +11,8 @@
         body { font-family: 'Manjari', sans-serif; background-color: #f0f9ff; }
         .glass { background: rgba(255, 255, 255, 1); border: 1px solid #e0e7ff; }
         .blue-gradient { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
+        .timer-warning { color: #dc2626; animation: blink 1s linear infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
     </style>
 
     <script type="module">
@@ -32,11 +34,67 @@
         const auth = getAuth(app);
         const resultsCol = collection(db, "artifacts/thelightjuniors/public/data/quiz_results");
 
-        // CLEANED ALLOWED LIST (No dashes for perfect matching)
-        const ALLOWED_MOBILES = ["966541303157", "917034253576", "919744205385"];
+        // CLEANED ALLOWED LIST (With dashes for display/matching)
+        const ALLOWED_MOBILES = [
+            "966-501797382", "966-599122138", "966-557544882", "91-7356160643",
+            "966-576737310", "91-8281539208", "91-6235828844", "966-535768609",
+            "966-505191459", "44-7624376081", "44-7624489327", "61-0401619365",
+            "91-6235928844", "91-6238041679", "91-7025511457", "91-7025785391",
+            "91-7034139883", "91-7034253576", "91-7034399820", "91-7306540074",
+            "91-7558871351", "91-7560956711", "91-7594803054", "91-7902448701",
+            "91-7902470316", "91-7907034843", "91-8129686991", "91-8129764186",
+            "91-8157860261", "91-8304063560", "91-8714267974", "91-8714801835",
+            "91-8848193358", "91-9037267974", "91-9207658678", "91-9496699612",
+            "91-9539360509", "91-9567256340", "91-9629988903", "91-9633035008",
+            "91-9645328773", "91-9645395415", "91-9656912678", "91-9744205385",
+            "91-9745616062", "91-9817111151", "91-9843918413", "91-9847193435",
+            "91-9847302529", "91-9895991116", "91-9900953430", "91-9946050257",
+            "91-9947709622", "965-50905731", "966-500677517", "966-500967745",
+            "966-501154403", "966-501250188", "966-501527780", "966-501534407",
+            "966-502163791", "966-503262990", "966-503679542", "966-503766632",
+            "966-504165135", "966-504186982", "966-504383232", "966-504435135",
+            "966-505332710", "966-505765817", "966-505797935", "966-506729657",
+            "966-506830680", "966-506942737", "966-507177103", "966-508032152",
+            "966-508194715", "966-508222053", "966-508386571", "966-508742148",
+            "966-508815960", "966-508854732", "966-509229487", "966-509262992",
+            "966-509292062", "966-509402136", "966-510360426", "966-530141819",
+            "966-530960342", "966-531894076", "966-532063993", "966-532679687",
+            "966-532796405", "966-532963089", "966-533594582", "966-533689757",
+            "966-534314336", "966-536273182", "966-536296334", "966-536474235",
+            "966-537637215", "966-538531297", "966-539101716", "966-539302907",
+            "966-539867101", "966-540247380", "966-541247266", "966-541632275",
+            "966-541851574", "966-541885929", "966-542099671", "966-543718439",
+            "966-543779651", "966-543820213", "966-545094153", "966-545136406",
+            "966-545442493", "966-545900025", "966-546549197", "966-546678286",
+            "966-546940420", "966-546991610", "966-548420429", "966-549840171",
+            "966-550619441", "966-550989676", "966-551508035", "966-551582755",
+            "966-551758148", "966-551876182", "966-552455305", "966-552465305",
+            "966-552640798", "966-552915784", "966-553602809", "966-554021052",
+            "966-554078961", "966-555069168", "966-556096654", "966-556475906",
+            "966-556857931", "966-558675808", "966-561486272", "966-562129566",
+            "966-562834251", "966-563161829", "966-564843475", "966-564984695",
+            "966-565951942", "966-566780847", "966-567133278", "966-567316632",
+            "966-567596578", "966-567830655", "966-567971022", "966-568258888",
+            "966-569180023", "966-569534791", "966-570173640", "966-570802341",
+            "966-570828420", "966-571918309", "966-572099478", "966-572957971",
+            "966-574359871", "966-574980699", "966-576050581", "966-580591263",
+            "966-581965286", "966-591277136", "966-592598969", "966-595088137",
+            "966-595171618", "966-599215214", "971-524832451", "971-555245457",
+            "971-557424082", "971-561432359", "971-563963407", "971-586655864",
+            "971-588822419", "91-9964946252", "965-99794592", "966-530992783",
+            "966-531458085", "966-534495300", "966-535460233", "966-553382689",
+            "966-554415618", "966-556752858", "966-566443377", "966-571053310",
+            "966-597053063", "91-9633987889", "966-506613574", "966-535821533",
+            "966-548421962", "966-565460233", "966-571472518", "91-7337505186",
+            "966-538451880", "966-562133065", "966-508451880", "966-538024360",
+            "966-531954480", "966-539004619", "966-549295586", "966-564546985",
+            "966-599934246", "91-9447156453"
+        ];
         let studentData = {};
         let selections = Array(10).fill(null);
         let currentQ = 0;
+        let timerInterval = null;
+        let timeLeft = 600; // 10 minutes in seconds
 
         const questions = [
             { q: "................ എന്നും, ................ എന്നും, ................ എന്നും ഖുർആൻ മുഖേന സത്യം ചെയ്തു കൊണ്ടാണ് അല്ലാഹു സൂറത്തു യാസീൻ ആരംഭിക്കുന്നത്. താഴെ നൽകിയവയിൽ വിട്ടഭാഗങ്ങളോട് യോജിക്കാത്തത് ഏത് ?", a: "‘യാസീൻ’ എന്നാൽ അർത്ഥമാക്കുന്നത് ‘ഹേ, മനുഷ്യാ’ എന്നാണ്", b: "നബി (സ) അല്ലാഹുവിൻറെ റസൂലാണ്", c: "നബി (സ) സ്വീകരിച്ചിട്ടുള്ള മാർഗം യാതൊരു വക്രതയുമില്ലാത്ത നേരായ മാർഗമാണ്", d: "അത് (ഖുർആൻ) അല്ലാഹു അവതരിപ്പിച്ചത് തന്നെയാണ്", correct: "a" },
@@ -74,14 +132,36 @@
             }
         };
 
+        window.startTimer = () => {
+            const timerDisplay = document.getElementById('timer-display');
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 60) {
+                    timerDisplay.classList.add('timer-warning');
+                    timerDisplay.parentElement.classList.replace('bg-blue-100', 'bg-red-100');
+                    timerDisplay.parentElement.classList.replace('text-blue-800', 'text-red-800');
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert("സമയം കഴിഞ്ഞു! നിങ്ങളുടെ ഉത്തരങ്ങൾ ഓട്ടോമാറ്റിക്കായി സബ്മിറ്റ് ചെയ്യപ്പെടുന്നു.");
+                    submitQuiz(true); // force submit
+                }
+            }, 1000);
+        };
+
         window.startQuiz = async () => {
             const name = document.getElementById('name').value.trim();
             const place = document.getElementById('place').value.trim();
-            // This strips all non-numeric characters (dashes, spaces) for the check
-            const mobile = document.getElementById('mobile').value.replace(/\D/g, '');
+            const mobile = document.getElementById('mobile').value.trim();
 
             if(!ALLOWED_MOBILES.includes(mobile)) {
-                return alert("ഈ മൊബൈൽ നമ്പറിന് പ്രവേശനമില്ല.");
+                return alert("ഈ മൊബൈൽ നമ്പറിന് പ്രവേശനമില്ല. ദയവായി ലിസ്റ്റിലുള്ള ഫോർമാറ്റിൽ തന്നെ നമ്പർ നൽകുക (ഉദാഹരണം: 91-7034253576).");
             }
             
             // save to cache once validated
@@ -94,6 +174,9 @@
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('student-result-screen').classList.remove('hidden');
                     document.getElementById('student-score-display').innerText = `${docData.score}/10`;
+                    document.getElementById('student-result-name').innerText = docData.name;
+                    document.getElementById('student-result-mobile').innerText = docData.mobile;
+                    document.getElementById('student-result-place').innerText = docData.place;
                     renderStudentAnswers(docData);
                     return;
                 } else {
@@ -109,6 +192,7 @@
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('quiz-screen').classList.remove('hidden');
             renderQuestion();
+            startTimer();
         };
 
         window.renderQuestion = () => {
@@ -167,9 +251,15 @@
 
         window.updateSelection = (index, val) => { selections[index] = val; };
 
-        window.submitQuiz = async () => {
+        window.submitQuiz = async (autoSubmit = false) => {
+            if (timerInterval) clearInterval(timerInterval);
+            
             const score = selections.filter((s, i) => s === questions[i].correct).length;
             await addDoc(resultsCol, { ...studentData, selections, score, at: serverTimestamp() });
+            
+            if (autoSubmit) {
+                document.getElementById('quiz-screen').classList.add('hidden');
+            }
             document.getElementById('review-screen').classList.add('hidden');
             document.getElementById('finish-screen').classList.remove('hidden');
         };
@@ -215,7 +305,7 @@
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "QuizResults");
-            XLSX.writeFile(wb, "TLJ_Results.xlsx");
+            XLSX.writeFile(wb, "VR26.xlsx");
         };
 
         window.approveAll = async () => {
@@ -248,22 +338,28 @@
 <body class="p-4 flex flex-col items-center min-h-screen">
     <div class="max-w-xl w-full glass rounded-[2.5rem] shadow-2xl overflow-hidden">
         <div class="blue-gradient p-8 text-center text-white">
-            <h1 class="text-2xl font-bold">The Light Juniors</h1>
-            <p class="text-blue-100 text-xs mt-1">Quiz Portal 2026</p>
+            <h1 class="text-2xl font-bold">വെളിച്ചം റമദാൻ <br> 2026 (VR2026)</h1>
+            <p class="text-blue-100 text-xs mt-2"><a href="https://velichamsaudionline.com/" target="_blank" class="hover:text-white underline transition-colors">velichamsaudionline.com</a></p>
         </div>
 
         <div class="p-8">
             <div id="login-screen" class="space-y-4">
                 <input type="text" id="name" placeholder="പൂർണ്ണ നാമം (Name)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 <input type="text" id="place" placeholder="സ്ഥലം (Place)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                <input type="text" id="mobile" placeholder="മൊബൈൽ (eg: 966541303157)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="text" id="mobile" placeholder="മൊബൈൽ (eg: 91-7034253576)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 <button onclick="startQuiz()" class="w-full blue-gradient text-white p-5 rounded-2xl font-bold shadow-lg hover:scale-[1.02] active:scale-95 transition-all">പ്രവേശിക്കുക</button>
                 <button onclick="checkAdmin()" class="w-full text-slate-400 text-[10px] mt-6 hover:text-blue-500 uppercase tracking-widest">Admin Access</button>
             </div>
 
             <div id="quiz-screen" class="hidden">
-                <div class="mb-4 text-center">
+                <div class="mb-4 flex justify-between items-center text-center">
                     <span id="q-number" class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider"></span>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full tracking-wider flex items-center gap-1 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                        </svg>
+                        <span id="timer-display">10:00</span>
+                    </span>
                 </div>
                 <div id="q-text" class="font-bold text-slate-800 text-lg mb-8 leading-relaxed"></div>
                 <div class="space-y-3">
@@ -324,6 +420,13 @@
                 <h2 class="text-2xl font-bold text-blue-800 mb-4">നിങ്ങളുടെ റിസൾട്ട്</h2>
                 <div class="text-6xl font-bold text-blue-600 mb-2" id="student-score-display">0/10</div>
                 <p class="text-slate-600 font-medium mb-6">അഭിനന്ദനങ്ങൾ!</p>
+                
+                <div class="bg-blue-50 p-4 rounded-xl mb-6 text-sm text-left border border-blue-100 shadow-sm w-full">
+                    <p class="mb-2"><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">പേര് (Name):</span> <br><span id="student-result-name" class="text-blue-900 font-bold text-base"></span></p>
+                    <p class="mb-2"><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">മൊബൈൽ (Mobile):</span> <br><span id="student-result-mobile" class="text-blue-900 font-bold text-base tracking-wider"></span></p>
+                    <p><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">സ്ഥലം (Place):</span> <br><span id="student-result-place" class="text-blue-900 font-bold text-base"></span></p>
+                </div>
+
                 <div id="student-answers-list" class="max-h-[400px] overflow-y-auto mb-6 pr-2"></div>
                 <!-- We wrap the home button in a flex container so it looks like a nice solid button -->
                 <button onclick="location.reload()" class="w-full bg-slate-200 text-slate-700 p-5 rounded-2xl font-bold shadow-sm transition-colors hover:bg-slate-300">Home</button>
