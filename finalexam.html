@@ -55,7 +55,21 @@
             }
             
             const qSnap = await getDocs(query(resultsCol, where("mobile", "==", mobile)));
-            if(!qSnap.empty) return alert("നിങ്ങൾ ഇതിനകം ക്വിസ് പൂർത്തിയാക്കി കഴിഞ്ഞു.");
+            if(!qSnap.empty) {
+                const docData = qSnap.docs[0].data();
+                if (docData.approved) {
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('student-result-screen').classList.remove('hidden');
+                    document.getElementById('student-score-display').innerText = `${docData.score}/10`;
+                    return;
+                } else {
+                    return alert("നിങ്ങൾ ഇതിനകം ക്വിസ് പൂർത്തിയാക്കി കഴിഞ്ഞു. റിസൾട്ട് അഡ്മിൻ അപ്രൂവലിനായി കാത്തിരിക്കുന്നു.");
+                }
+            }
+
+            if (!name || !place) {
+                return alert("പേരും സ്ഥലവും നൽകുക.");
+            }
 
             studentData = { name, place, mobile, approved: false };
             document.getElementById('login-screen').classList.add('hidden');
@@ -209,4 +223,33 @@
                 </div>
                 <button onclick="approveAll()" class="w-full bg-blue-100 text-blue-700 py-3 rounded-xl mb-6 text-xs font-bold hover:bg-blue-200 transition-colors">APPROVE ALL STUDENTS</button>
                 <div class="overflow-x-auto">
-                    <table class="w-full
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[10px] text-slate-500 border-b border-blue-100 uppercase bg-blue-50/50">
+                                <th class="p-3">Name</th>
+                                <th class="p-3">Score</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="finish-screen" class="hidden text-center py-10">
+                <h2 class="text-2xl font-bold text-green-600 mb-4">പരീക്ഷ പൂർത്തിയായി!</h2>
+                <p class="text-slate-600">അഡ്മിൻ അപ്രൂവ് ചെയ്ത ശേഷം നിങ്ങളുടെ മാർക്ക് പരിശോധിക്കാവുന്നതാണ്.</p>
+                <button onclick="location.reload()" class="mt-8 text-blue-600 text-xs font-bold underline">Home</button>
+            </div>
+
+            <div id="student-result-screen" class="hidden text-center py-10">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">നിങ്ങളുടെ റിസൾട്ട്</h2>
+                <div class="text-6xl font-bold text-blue-600 mb-2" id="student-score-display">0/10</div>
+                <p class="text-slate-600 font-medium">അഭിനന്ദനങ്ങൾ!</p>
+                <button onclick="location.reload()" class="mt-8 text-blue-600 text-xs font-bold underline">Home</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
