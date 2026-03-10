@@ -140,7 +140,15 @@
                         const detailsHtml = `
                         <div class="mt-4 hidden space-y-3" id="details-${roundKey}">
                             ${roundQs.map((q, i) => {
-                                const selectedArr = roundData.selections[i] || [];
+                                let rawSel = roundData.selections[i];
+                                let selectedArr = [];
+                                if (rawSel) {
+                                    if (typeof rawSel === 'string') {
+                                        selectedArr = rawSel.split(',').filter(x => x);
+                                    } else if (Array.isArray(rawSel)) {
+                                        selectedArr = rawSel;
+                                    }
+                                }
                                 const correctArr = Array.isArray(q.correct) ? q.correct : [q.correct];
                                 const sortedS = [...selectedArr].sort();
                                 const sortedC = [...correctArr].sort();
@@ -456,33 +464,44 @@
         };
 
         window.submitQuiz = async (autoSubmit = false) => {
-            if (timerInterval) clearInterval(timerInterval);
-            if (!targetRound) return; // safeguard
-            
-            const score = selections.filter((s, i) => {
-                const correctArr = Array.isArray(questions[i].correct) ? questions[i].correct : [questions[i].correct];
-                if (!s || s.length !== correctArr.length) return false;
-                const sortedS = [...s].sort();
-                const sortedC = [...correctArr].sort();
-                return sortedS.every((val, index) => val === sortedC[index]);
-            }).length;
-            const roundPayload = { score, selections, approved: false, at: serverTimestamp() };
-            
-            // We use the mobile number as the document ID so we can easily update it across 4 rounds
-            const docRef = doc(db, "grand_finale_results", studentData.mobile);
-            const dataToSet = { name: studentData.name, place: studentData.place, mobile: studentData.mobile };
-            dataToSet[targetRound] = roundPayload;
-            
-            await setDoc(docRef, dataToSet, { merge: true });
-            
-            localStorage.removeItem('tlj_finalexamvr26_start');
-            localStorage.removeItem('tlj_finalexamvr26_selections');
+            try {
+                const btn = document.querySelector('button[onclick="submitQuiz()"]');
+                if (btn) btn.innerText = "Submitting...";
 
-            if (autoSubmit) {
-                document.getElementById('quiz-screen').classList.add('hidden');
+                if (timerInterval) clearInterval(timerInterval);
+                if (!targetRound) return; // safeguard
+                
+                const score = selections.filter((s, i) => {
+                    if (!questions[i]) return false;
+                    const correctArr = Array.isArray(questions[i].correct) ? questions[i].correct : [questions[i].correct];
+                    if (!s || !Array.isArray(s) || s.length !== correctArr.length) return false;
+                    const sortedS = [...s].sort();
+                    const sortedC = [...correctArr].sort();
+                    return sortedS.every((val, index) => val === sortedC[index]);
+                }).length;
+                const convertedSelections = selections.map(s => Array.isArray(s) ? s.join(',') : s);
+                const roundPayload = { score, selections: convertedSelections, approved: false, at: serverTimestamp() };
+                
+                const docRef = doc(db, "grand_finale_vr26_results", studentData.mobile);
+                const dataToSet = { name: studentData.name, place: studentData.place, mobile: studentData.mobile };
+                dataToSet[targetRound] = roundPayload;
+                
+                await setDoc(docRef, dataToSet, { merge: true });
+                
+                localStorage.removeItem('tlj_finalexamvr26_start');
+                localStorage.removeItem('tlj_finalexamvr26_selections');
+
+                if (autoSubmit) {
+                    document.getElementById('quiz-screen').classList.add('hidden');
+                }
+                document.getElementById('review-screen').classList.add('hidden');
+                document.getElementById('finish-screen').classList.remove('hidden');
+            } catch (err) {
+                console.error("Submit Error:", err);
+                alert("സബ്മിറ്റ് ചെയ്യുന്നതിൽ പിശക്! ഇന്റർനെറ്റ് പരിശോധിച്ചു വീണ്ടും ശ്രമിക്കുക. Error: " + err.message);
+                const btn = document.querySelector('button[onclick="submitQuiz()"]');
+                if (btn) btn.innerText = "ഫൈനൽ സബ്മിറ്റ്";
             }
-            document.getElementById('review-screen').classList.add('hidden');
-            document.getElementById('finish-screen').classList.remove('hidden');
         };
 
         // ADMIN LOGIC
@@ -583,10 +602,10 @@
             loadAdminData();
         };
 
-        window.deleteEntry = async (id) => { if(confirm("ഈ എൻട്രി നീക്കം ചെയ്യണോ?")) { await deleteDoc(doc(db, "grand_finale_results", id)); loadAdminData(); } };
+        window.deleteEntry = async (id) => { if(confirm("ഈ എൻട്രി നീക്കം ചെയ്യണോ?")) { await deleteDoc(doc(db, "grand_finale_vr26_results", id)); loadAdminData(); } };
         
         window.approveEntry = async (id) => { 
-            const docRef = doc(db, "grand_finale_results", id);
+            const docRef = doc(db, "grand_finale_vr26_results", id);
             const dSnap = await getDoc(docRef);
             if (dSnap.exists()) {
                 const dData = dSnap.data();
