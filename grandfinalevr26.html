@@ -227,8 +227,9 @@
             }
 
             const updateTimer = () => {
+                const totalSeconds = globalControlStatus?.durationMinutes ? globalControlStatus.durationMinutes * 60 : 600;
                 const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-                timeLeft = Math.max(0, 600 - elapsedSeconds); // 10 minutes = 600 seconds
+                timeLeft = Math.max(0, totalSeconds - elapsedSeconds);
                 
                 const minutes = Math.floor(timeLeft / 60);
                 const seconds = timeLeft % 60;
@@ -626,10 +627,17 @@
                 const docSnap = await getDoc(controlDocRef);
                 const defaultState = { round1: true, round2: false, round3: false, round4: false, showResults: false };
                 let currentStatus = defaultState;
-                if (docSnap.exists() && docSnap.data().isOpen) {
-                    currentStatus = { ...defaultState, ...docSnap.data().isOpen };
+                if (docSnap.exists()) {
+                    const d = docSnap.data();
+                    if (d.isOpen) {
+                        currentStatus = { ...defaultState, ...d.isOpen };
+                    }
+                    if (d.durationMinutes) {
+                        document.getElementById('admin-duration').value = d.durationMinutes;
+                        globalControlStatus.durationMinutes = d.durationMinutes;
+                    }
                 }
-                globalControlStatus = { isOpen: currentStatus };
+                globalControlStatus.isOpen = currentStatus;
                 
                 ['round1', 'round2', 'round3', 'round4', 'showResults'].forEach(key => {
                     updateExamStatusButton(key, currentStatus[key]);
@@ -670,6 +678,96 @@
                 
                 updateExamStatusButton(key, newStatus);
             }
+        };
+
+        window.saveDuration = async () => {
+            const minStr = document.getElementById('admin-duration').value;
+            const min = parseInt(minStr, 10);
+            if (isNaN(min) || min < 1) return alert("ദയവായി ശരിയായ സമയം നൽകുക.");
+            
+            try {
+                await setDoc(controlDocRef, { durationMinutes: min }, { merge: true });
+                globalControlStatus.durationMinutes = min;
+                alert(`സമയം ${min} മിനിറ്റ് ആയി സേവ് ചെയ്തു.`);
+            } catch (err) {
+                console.error("Save Duration Error", err);
+                alert("സമയം സേവ് ചെയ്യുന്നതിൽ പിശക്!");
+            }
+        };
+
+        window.downloadTemplate = () => {
+            const wsData = [
+                ["No", "Question", "Option A", "Option B", "Option C", "Option D", "Correct Answers (comma separated)"],
+                [1, "Sample Question: What is the capital of Saudi Arabia?", "Jeddah", "Riyadh", "Mecca", "Medina", "b"],
+                [2, "Select the odd ones out:", "Apple", "Car", "Banana", "Bus", "b, d"]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Template");
+            XLSX.writeFile(wb, "VR26_Question_Template.xlsx");
+        };
+
+        window.uploadQuestions = async () => {
+            const fileInput = document.getElementById('question-upload');
+            const roundSelect = document.getElementById('upload-round-select').value;
+            
+            if (!fileInput.files.length) return alert("ദയവായി Excel ഫയൽ തിരഞ്ഞെടുക്കുക.");
+            if (!roundSelect) return alert("ദയവായി ഒരു Round തിരഞ്ഞെടുക്കുക.");
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                // validate header length, usually minimum 7 columns
+                if(rows.length < 2) return alert("വാലിഡായ ചോദ്യങ്ങൾ കണ്ടെത്താനായില്ല.");
+                
+                let newQuestions = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (!r[1]) continue; // Skip empty question rows
+                    
+                    // Parse correct answers (e.g., "a, b" -> ["a", "b"])
+                    let correctRaw = r[6] ? String(r[6]).toLowerCase() : "";
+                    let correctArr = correctRaw.split(',').map(s => s.trim()).filter(s => ['a','b','c','d'].includes(s));
+                    
+                    if (correctArr.length === 0) {
+                        return alert(`രിരികെ പിഴവ്: ചോദ്യം ${i} ലെ ശരിയായ ഉത്തരം നൽകിയിട്ടില്ല അഥവാ തെറ്റാണ്.`);
+                    }
+
+                    newQuestions.push({
+                        q: String(r[1] || ""),
+                        a: String(r[2] || ""),
+                        b: String(r[3] || ""),
+                        c: String(r[4] || ""),
+                        d: String(r[5] || ""),
+                        correct: correctArr
+                    });
+                }
+                
+                if (newQuestions.length === 0) return alert("യാതൊരു ചോദ്യങ്ങളും വായിക്കാൻ കഴിഞ്ഞില്ല.");
+                if (!confirm(`${newQuestions.length} ചോദ്യങ്ങൾ ${roundSelect.toUpperCase()} ചോദ്യാവലിയിലേക്ക് മാറ്റാൻ താങ്കൾക്ക് ഉറപ്പാണോ? (പഴയവ മായ്ക്കപ്പെടും)`)) return;
+
+                const uploadBtn = document.getElementById('upload-btn');
+                uploadBtn.innerText = "Uploading...";
+                
+                try {
+                    await setDoc(doc(db, "grand_finale_vr26_questions", roundSelect), { questions: newQuestions });
+                    alert(`${roundSelect.toUpperCase()} വിജയകരമായി ചോദ്യങ്ങൾ അപ്ഡേറ്റ് ചെയ്തു!`);
+                    fileInput.value = ""; // clear
+                } catch (err) {
+                    console.error("Upload Questions Error", err);
+                    alert("ചോദ്യങ്ങൾ സേവ് ചെയ്യുന്നതിൽ പിശക്!");
+                } finally {
+                    uploadBtn.innerText = "UPLOAD";
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
         };
 
         window.onload = () => {
@@ -757,6 +855,38 @@
                         <div class="w-px bg-blue-200 mx-1"></div>
                         <button id="exam-status-btn-showResults" onclick="toggleExamStatus('showResults')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">PUB: L</button>
                     </div>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 mt-2">
+                        <!-- Exam Settings -->
+                        <div class="flex-1 bg-white p-4 rounded-xl border border-blue-100 shadow-sm flex flex-col justify-center">
+                            <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider mb-2">Duration Settings</h3>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="admin-duration" placeholder="Minutes" value="10" class="w-full p-2 border border-slate-200 rounded outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <span class="text-xs font-bold text-slate-600">min</span>
+                                <button onclick="saveDuration()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors whitespace-nowrap">SAVE</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Bulk Questions Upload -->
+                        <div class="flex-2 bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Upload Questions (Excel)</h3>
+                                <button onclick="downloadTemplate()" class="text-[10px] text-blue-600 font-bold hover:underline">Download Template</button>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <select id="upload-round-select" class="p-2 border border-slate-200 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="" disabled selected>Select Round...</option>
+                                    <option value="round1">Round 1</option>
+                                    <option value="round2">Round 2</option>
+                                    <option value="round3">Round 3</option>
+                                    <option value="round4">Round 4</option>
+                                </select>
+                                <input type="file" id="question-upload" accept=".xlsx, .xls" class="flex-1 text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 p-1 border border-slate-200 rounded">
+                                <button id="upload-btn" onclick="uploadQuestions()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors">UPLOAD</button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
                 <!-- ... rest of admin logic ... -->
                 <button onclick="approveAll()" class="w-full bg-blue-100 text-blue-700 py-3 rounded-xl mb-6 text-xs font-bold hover:bg-blue-200 transition-colors">APPROVE ALL STUDENTS</button>
