@@ -32,8 +32,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const resultsCol = collection(db, "artifacts/thelightjuniors/public/data/grand_finale_results");
-        const controlDocRef = doc(db, "artifacts/thelightjuniors/public/data/settings/grand_finale_control");
+        const resultsCol = collection(db, "velichamsaudionline/grand_finale_results");
+        const controlDocRef = doc(db, "velichamsaudionline/grand_finale_control/status");
 
         // CLEANED ALLOWED LIST (With dashes for display/matching)
         const ALLOWED_MOBILES = [
@@ -410,7 +410,7 @@
             const roundPayload = { score, selections, approved: false, at: serverTimestamp() };
             
             // We use the mobile number as the document ID so we can easily update it across 4 rounds
-            const docRef = doc(db, "artifacts/thelightjuniors/public/data/grand_finale_results", studentData.mobile);
+            const docRef = doc(db, "velichamsaudionline/grand_finale_results", studentData.mobile);
             const dataToSet = { name: studentData.name, place: studentData.place, mobile: studentData.mobile };
             dataToSet[targetRound] = roundPayload;
             
@@ -518,10 +518,10 @@
             loadAdminData();
         };
 
-        window.deleteEntry = async (id) => { if(confirm("ഈ എൻട്രി നീക്കം ചെയ്യണോ?")) { await deleteDoc(doc(db, "artifacts/thelightjuniors/public/data/grand_finale_results", id)); loadAdminData(); } };
+        window.deleteEntry = async (id) => { if(confirm("ഈ എൻട്രി നീക്കം ചെയ്യണോ?")) { await deleteDoc(doc(db, "velichamsaudionline/grand_finale_results", id)); loadAdminData(); } };
         
         window.approveEntry = async (id) => { 
-            const docRef = doc(db, "artifacts/thelightjuniors/public/data/grand_finale_results", id);
+            const docRef = doc(db, "velichamsaudionline/grand_finale_results", id);
             const dSnap = await getDoc(docRef);
             if (dSnap.exists()) {
                 const dData = dSnap.data();
