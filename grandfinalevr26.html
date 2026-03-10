@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>വെളിച്ചം റമദാൻ 2026(VR2026) - Grand Finale VR26 (Multi-Select)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap');
+        body { font-family: 'Manjari', sans-serif; background-color: #f0f9ff; }
+        .glass { background: rgba(255, 255, 255, 1); border: 1px solid #e0e7ff; }
+        .blue-gradient { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
+        .timer-warning { color: #dc2626; animation: blink 1s linear infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, where, updateDoc, writeBatch, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPHM4eHRhRPyA-JFDXMrbuFIeMvnGByts",
+            authDomain: "velichamsaudionline-66fc0.firebaseapp.com",
+            projectId: "velichamsaudionline-66fc0",
+            storageBucket: "velichamsaudionline-66fc0.firebasestorage.app",
+            messagingSenderId: "414471469839",
+            appId: "1:414471469839:web:d4ad0bd9d8c31dfe85dc7a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const resultsCol = collection(db, "grand_finale_vr26_results");
+        const controlDocRef = doc(db, "grand_finale_vr26_control", "status");
+
+        // CLEANED ALLOWED LIST (With dashes for display/matching)
+        const ALLOWED_MOBILES = [
+            "966-501797382", "966-599122138", "966-557544882", "91-7356160643",
+            "966-576737310", "91-8281539208", "91-6235828844", "966-535768609",
+            "966-505191459", "44-7624376081", "44-7624489327", "61-0401619365",
+            "91-6235928844", "91-6238041679", "91-7025511457", "91-7025785391",
+            "91-7034139883", "91-7034253576", "91-7034399820", "91-7306540074",
+            "91-7558871351", "91-7560956711", "91-7594803054", "91-7902448701",
+            "91-7902470316", "91-7907034843", "91-8129686991", "91-8129764186",
+            "91-8157860261", "91-8304063560", "91-8714267974", "91-8714801835",
+            "91-8848193358", "91-9037267974", "91-9207658678", "91-9496699612",
+            "91-9539360509", "91-9567256340", "91-9629988903", "91-9633035008",
+            "91-9645328773", "91-9645395415", "91-9656912678", "91-9744205385",
+            "91-9745616062", "91-9817111151", "91-9843918413", "91-9847193435",
+            "91-9847302529", "91-9895991116", "91-9900953430", "91-9946050257",
+            "91-9947709622", "965-50905731", "966-500677517", "966-500967745",
+            "966-501154403", "966-501250188", "966-501527780", "966-501534407",
+            "966-502163791", "966-503262990", "966-503679542", "966-503766632",
+            "966-504165135", "966-504186982", "966-504383232", "966-504435135",
+            "966-505332710", "966-505765817", "966-505797935", "966-506729657",
+            "966-506830680", "966-506942737", "966-507177103", "966-508032152",
+            "966-508194715", "966-508222053", "966-508386571", "966-508742148",
+            "966-508815960", "966-508854732", "966-509229487", "966-509262992",
+            "966-509292062", "966-509402136", "966-510360426", "966-530141819",
+            "966-530960342", "966-531894076", "966-532063993", "966-532679687",
+            "966-532796405", "966-532963089", "966-533594582", "966-533689757",
+            "966-534314336", "966-536273182", "966-536296334", "966-536474235",
+            "966-537637215", "966-538531297", "966-539101716", "966-539302907",
+            "966-539867101", "966-540247380", "966-541247266", "966-541632275",
+            "966-541851574", "966-541885929", "966-542099671", "966-543718439",
+            "966-543779651", "966-543820213", "966-545094153", "966-545136406",
+            "966-545442493", "966-545900025", "966-546549197", "966-546678286",
+            "966-546940420", "966-546991610", "966-548420429", "966-549840171",
+            "966-550619441", "966-550989676", "966-551508035", "966-551582755",
+            "966-551758148", "966-551876182", "966-552455305", "966-552465305",
+            "966-552640798", "966-552915784", "966-553602809", "966-554021052",
+            "966-554078961", "966-555069168", "966-556096654", "966-556475906",
+            "966-556857931", "966-558675808", "966-561486272", "966-562129566",
+            "966-562834251", "966-563161829", "966-564843475", "966-564984695",
+            "966-565951942", "966-566780847", "966-567133278", "966-567316632",
+            "966-567596578", "966-567830655", "966-567971022", "966-568258888",
+            "966-569180023", "966-569534791", "966-570173640", "966-570802341",
+            "966-570828420", "966-571918309", "966-572099478", "966-572957971",
+            "966-574359871", "966-574980699", "966-576050581", "966-580591263",
+            "966-581965286", "966-591277136", "966-592598969", "966-595088137",
+            "966-595171618", "966-599215214", "971-524832451", "971-555245457",
+            "971-557424082", "971-561432359", "971-563963407", "971-586655864",
+            "971-588822419", "91-9964946252", "965-99794592", "966-530992783",
+            "966-531458085", "966-534495300", "966-535460233", "966-553382689",
+            "966-554415618", "966-556752858", "966-566443377", "966-571053310",
+            "966-597053063", "91-9633987889", "966-506613574", "966-535821533",
+            "966-548421962", "966-565460233", "966-571472518", "91-7337505186",
+            "966-538451880", "966-562133065", "966-508451880", "966-538024360",
+            "966-531954480", "966-539004619", "966-549295586", "966-564546985",
+            "966-599934246", "91-9447156453"
+        ];
+        let studentData = {};
+        let selections = Array(10).fill().map(() => []);
+        let currentQ = 0;
+        let timerInterval = null;
+        let timeLeft = 600; // 10 minutes in seconds
+        let targetRound = null; // To track which round the student is currently taking
+        let globalControlStatus = {};
+
+        const baseQuestions = [
+            { q: "................ എന്നും, ................ എന്നും, ................ എന്നും ഖുർആൻ മുഖേന സത്യം ചെയ്തു കൊണ്ടാണ് അല്ലാഹു സൂറത്തു യാസീൻ ആരംഭിക്കുന്നത്. താഴെ നൽകിയവയിൽ വിട്ടഭാഗങ്ങളോട് യോജിക്കാത്തത് ഏത് ?", a: "‘യാസീൻ’ എന്നാൽ അർത്ഥമാക്കുന്നത് ‘ഹേ, മനുഷ്യാ’ എന്നാണ്", b: "നബി (സ) അല്ലാഹുവിൻറെ റസൂലാണ്", c: "നബി (സ) സ്വീകരിച്ചിട്ടുള്ള മാർഗം യാതൊരു വക്രതയുമില്ലാത്ത നേരായ മാർഗമാണ്", d: "അത് (ഖുർആൻ) അല്ലാഹു അവതരിപ്പിച്ചത് തന്നെയാണ്", correct: ["a"] },
+            { q: "..................... എന്നു പറഞ്ഞതിൻറെ ഉദ്ദേശം, മേലിൽ ഹൃദയപരിവർത്തനം വന്ന് നന്നായിത്തീരുവാൻ മാർഗമില്ലാത്തവിധം അവരുടെ ഹൃദയങ്ങൾ ദൂഷിച്ചുപോയിട്ടുണ്ടെന്നും, അതിനാൽ ശിക്ഷയെ സംബന്ധിച്ച താക്കീതു അവരിൽ ബാധകമായിക്കഴിഞ്ഞിട്ടുണ്ടെന്നും ആകുന്നു.", a: "എനി അവർ വിശ്വസിക്കുകയില്ല (فَهُمْ لَا يُؤْمِنُونَ)", b: "വാക്കു സ്ഥിരപ്പെട്ടു (حَقَّ الْقَوْلُ)", c: "അതിനാൽ അവർ അശ്രദ്ധരാണ് (فَهُمْ غَافِلُونَ)", d: "അവരിൽ സമമാണ് (سَوَاءٌ عَلَيْهِمْ)", correct: ["b"] },
+            { q: "ആ മുശ്‌രിക്കുകളെ താക്കീതു ചെയ്താലും ഇല്ലെങ്കിലും കാര്യമില്ല, അവർ വിശ്വസിക്കില്ല. കാരണം അവരുടെ ഹൃദയം അത്രത്തോളം കഠിനമായിരിക്കുന്നു. ഇത് വ്യക്തമാക്കാൻ അല്ലാഹു പറയുന്ന ഉപമകളിൽ നിന്നും ചില പ്രയോഗങ്ങളെ താഴെ നൽകുന്നു, അവയിൽ പെടാത്തത് ഏത്?", a: "കഴുത്തുകളിൽ താടിയെല്ലുകൾ വരെയുള്ള ആമങ്ങൾ ഏർപ്പെടുത്തി", b: "അതിനാൽ അവർ തലപൊക്കപ്പെട്ടവരാകുന്നു", c: "മുമ്പിൽ ഒരു തടവും പിമ്പിൽ ഇരു തടവും നൽകി അവരെ മൂടിയിരിക്കുന്നു", d: "അതിനാൽ അവർ അനുസരണയുള്ളവരാണ്", correct: ["d"] },
+            { q: "ഒരാളൊരു നല്ല നടപടി ക്രമം നടപ്പിലാക്കിയാൽ അയാൾക്ക് ലഭിക്കുന്ന പ്രതിഫലമായി ബന്ധപ്പെട്ട് ശരിയായത് ..........", a: "അവന്നു അതിൻറെ പ്രതിഫലമുണ്ട്", b: "അവന്നു ശേഷം അതനുസരിച്ച് പ്രവർത്തിക്കുന്നവരുടെ പ്രതിഫലവുമുണ്ട്", c: "അവരുടെ പ്രതിഫലങ്ങളിൽ ഒട്ടും കുറവ് വരാതെതന്നെ അവന്നു പ്രതിഫലം ഉണ്ടായിരിക്കും", d: "എല്ലാം ശരിയാണ്", correct: ["d", "a", "b", "c"] },
+            { q: "ദൂതന്മാരെ കള്ളവാക്കിയ ജനതയുടെ ഒരു പ്രസ്താവനയാണ്; \"...................... ൽ നിന്ന് നിങ്ങൾക്ക് തീർച്ചയായും വേദനയേറിയ ശിക്ഷ ബാധിക്കുന്നതാണ്\". ഇവിടെ വിട്ടഭാഗത്ത് ഉദ്ദേശിച്ചത് ആരെയാണ്?", a: "അല്ലാഹുവിൽ നിന്ന്", b: "ആ ജനതയിൽ നിന്ന്", c: "ഫിർഔനിൽ നിന്ന്", d: "സ്വാലിഹു (അ) നബിയുടെ ജനതയിൽ നിന്ന്", correct: ["b"] },
+            { q: "പട്ടണത്തിൻറെ അങ്ങേ അറ്റത്തു നിന്ന് ഓടി വന്ന മനുഷ്യൻ ആ ജനതയോട് ഉപദേശിച്ച ചില വാക്യങ്ങളെ നൽകുന്നു. ഒന്ന് അവയിൽ പെടുന്നില്ല, ഏത്?", a: "അവന്നു പുറമെ വല്ല ദൈവങ്ങളെയും ഞാൻ സ്വീകരിക്കുകയോ?", b: "എൻറെ ജനങ്ങൾ അറിഞ്ഞിരുന്നുവെങ്കിൽ നന്നായേനെ", c: "എന്നെ സൃഷ്ടിച്ചുണ്ടാക്കിയവനെ ഞാൻ ആരാധന ചെയ്യാതിരിക്കുവാൻ എനിക്ക് എന്താണ് തടസ്സം", d: "നിശ്ചയമായും ഞാൻ നിങ്ങളുടെ രക്ഷിതാവിൽ വിശ്വസിച്ചിരിക്കുന്നു", correct: ["b"] },
+            { q: "ആ ജനതയെ അല്ലാഹു വമ്പിച്ച ശിക്ഷ മൂലം നശിപ്പിക്കാനുള്ള കാരണം എന്തായിരുന്നു?", a: "അവരിലേക്ക് വന്ന ദൂതന്മാരെ കല്ലെറിഞ്ഞു കൊല്ലുമെന്ന് ഭീഷണിപ്പെടുത്തി", b: "ആദ്യ രണ്ടു ദൂതന്മാരെ അവർ ആദ്യമേ കൊന്നു കളഞ്ഞു", c: "പട്ടണത്തിലെ അങ്ങേ അറ്റത്തിൽ നിന്നും ഓടി വന്ന മൂന്നാമത്തെ ദൂതനെ ആക്രമിച്ചു", d: "അവരിലേക്ക് വന്ന ദൂതന്മാരെ ധിക്കരിക്കുകയും ഉപദേഷ്ടാവിനെ ആക്രമിക്കുകയും ചെയ്തു", correct: ["d"] },
+            { q: "\"എല്ലാ ഇണവർഗ്ഗങ്ങളെയും സൃഷ്ടിച്ചിട്ടുള്ളവൻ മഹാ പരിശുദ്ധനത്രെ\"; വചനത്തിൽ വന്നിട്ടില്ലാത്തത് ഏത്?", a: "ഭൂമി ഉൽപാദിപ്പിക്കുന്നതിൽ നിന്ന്", b: "അവരുടെ ദേഹങ്ങളിൽ നിന്ന്", c: "അവർക്ക് അറിയുന്നവയിൽനിന്ന്", d: "അവർക്ക് അറിഞ്ഞുകൂടാത്തവയിൽ നിന്ന്", correct: ["c"] },
+            { q: "സൂര്യനും ചന്ദ്രനും ഭൂമിയും രാവും പകലും എല്ലാം ബുദ്ധി വർഗ്ഗത്തെപ്പോലെ അത്തതിൻറെ ചലനങ്ങൾ നിർവഹിച്ചു കൊണ്ടിരിക്കുന്നു എന്ന് സൂചന നൽകുന്ന വചന ഭാഗം ഏത് ?", a: "وَالشَّمْسُ تَجْرِي لِمُسْتَقَرٍّ لَّهَا സൂര്യൻ അതിൻറെ ഒരു താവളത്തിലേക്കു ചലിച്ചു കൊണ്ടിരിക്കുന്നു", b: "لَا الشَّمْسُ يَنبَغِي لَهَا أَن تُدْرِكَ الْقَمَرَ സൂര്യനാകട്ടെ അതിന് ചന്ദ്രനെ പ്രാപിക്കുവാൻ പറ്റുകയില്ല", c: "وَلَا اللَّيْلُ سَابِقُ النَّهَارِ രാത്രി പകലിനെ മുൻകടക്കുന്നതുമല്ല", d: "وَكُلٌّ فِي فَلَكٍ يَسْبَحُونَ എല്ലാം ഓരോ സഞ്ചാര മണ്ഡലത്തിൽ നീന്തി കൊണ്ടിരിക്കുന്നു.", correct: ["d"] },
+            { q: "മുൻസമുദായങ്ങൾക്ക് ബാധിച്ചതു പോലെയുള്ള ഐഹിക ശിക്ഷകളെ നിങ്ങൾ സൂക്ഷിക്കണം, വരാനിരിക്കുന്ന പരലോക ശിക്ഷയെയും നിങ്ങൾ സൂക്ഷിക്കണം, എന്നാൽ നിങ്ങൾ ................", a: "സൂക്ഷ്മതയുള്ളവരായേക്കാം", b: "വിജയികളായേക്കാം", c: "കരുണ ചെയ്യപ്പെട്ടേക്കാം", d: "നേർവഴി കാണിക്കപ്പെട്ടേക്കാം", correct: ["c"] }
+        ];
+
+        // Currently using placeholders for Rounds 2-4. Change these as needed!
+        const grandQuestions = {
+            round1: [...baseQuestions],
+            round2: [...baseQuestions],
+            round3: [...baseQuestions],
+            round4: [...baseQuestions]
+        };
+
+        let questions = grandQuestions.round1; // Default, overrides later
+
+
+        window.renderStudentAnswersSummary = (docData) => {
+            const container = document.getElementById('student-answers-list');
+            if(container) {
+                container.innerHTML = [1, 2, 3, 4].map(roundNum => {
+                    const roundKey = `round${roundNum}`;
+                    const roundData = docData[roundKey];
+                    if (!roundData) {
+                        return `
+                        <div class="p-4 bg-slate-100 rounded-lg mb-3 border border-slate-200 shadow-sm flex justify-between items-center">
+                            <span class="font-bold text-slate-500">Round ${roundNum}</span>
+                            <span class="font-bold text-slate-400">NA</span>
+                        </div>`;
+                    } else if (roundData.approved) {
+                        const roundQs = grandQuestions[roundKey];
+                        const detailsHtml = `
+                        <div class="mt-4 hidden space-y-3" id="details-${roundKey}">
+                            ${roundQs.map((q, i) => {
+                                const selectedArr = roundData.selections[i] || [];
+                                const correctArr = Array.isArray(q.correct) ? q.correct : [q.correct];
+                                const sortedS = [...selectedArr].sort();
+                                const sortedC = [...correctArr].sort();
+                                const isCorrect = sortedS.length === sortedC.length && sortedS.every((val, idx) => val === sortedC[idx]);
+                                
+                                const optLetter = selectedArr.length ? sortedS.map(s => s.toUpperCase()).join(', ') : 'N/A';
+                                const optText = selectedArr.length ? sortedS.map(s => q[s]).join(' | ') : 'ഉത്തരം നൽകിയിട്ടില്ല';
+                                const correctLetters = sortedC.map(c => c.toUpperCase()).join(', ');
+                                const correctText = sortedC.map(c => q[c]).join(' | ');
+
+                                return `
+                                <div class="p-4 bg-white rounded-lg border ${isCorrect ? 'border-green-200' : 'border-red-200'} shadow-sm text-left">
+                                    <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
+                                    <p class="text-xs mt-2 ${isCorrect ? 'text-green-700' : 'text-red-700'} font-semibold">
+                                        നിങ്ങളുടെ ഉത്തരം: ${optLetter}. ${optText}
+                                        ${isCorrect ? ' <span class="text-green-500 ml-1">✓</span>' : ' <span class="text-red-500 ml-1">✗</span>'}
+                                    </p>
+                                    ${!isCorrect ? `<p class="text-xs mt-1 text-green-700 font-semibold">ശരിയായ ഉത്തരം: ${correctLetters}. ${correctText}</p>` : ''}
+                                </div>`;
+                            }).join('')}
+                        </div>`;
+
+                        return `
+                        <div class="p-4 bg-white rounded-lg mb-3 border border-green-200 shadow-sm flex flex-col">
+                            <div class="flex justify-between items-center cursor-pointer select-none" onclick="document.getElementById('details-${roundKey}').classList.toggle('hidden')">
+                                <span class="font-bold text-slate-800 flex items-center gap-2">
+                                    Round ${roundNum} 
+                                    <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full border border-blue-100 hover:bg-blue-100 transition-colors">View Answers ▾</span>
+                                </span>
+                                <span class="font-bold text-green-600 text-lg">${roundData.score}/10</span>
+                            </div>
+                            ${detailsHtml}
+                        </div>`;
+                    } else {
+                        return `
+                        <div class="p-4 bg-white rounded-lg mb-3 border border-amber-200 shadow-sm flex justify-between items-center">
+                            <span class="font-bold text-slate-800">Round ${roundNum}</span>
+                            <span class="font-bold text-amber-500 text-sm italic">Pending Approval</span>
+                        </div>`;
+                    }
+                }).join('');
+            }
+            
+            // Calculate total score if all attended are approved
+            let total = 0;
+            let allApproved = true;
+            let anyAttended = false;
+            
+            [1, 2, 3, 4].forEach(r => {
+                if (docData[`round${r}`]) {
+                    anyAttended = true;
+                    if (docData[`round${r}`].approved) {
+                        total += docData[`round${r}`].score;
+                    } else {
+                        allApproved = false;
+                    }
+                }
+            });
+
+            const scoreDisplay = document.getElementById('student-score-display');
+            if (anyAttended && allApproved) {
+                scoreDisplay.innerText = `${total}/40`;
+            } else {
+                scoreDisplay.innerText = "Pending";
+            }
+        };
+
+        window.startTimer = () => {
+            const timerDisplay = document.getElementById('timer-display');
+            let startTime = localStorage.getItem('tlj_finalexamvr26_start');
+            if (!startTime) {
+                startTime = Date.now();
+                localStorage.setItem('tlj_finalexamvr26_start', startTime);
+            } else {
+                startTime = parseInt(startTime, 10);
+            }
+
+            const updateTimer = () => {
+                const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                timeLeft = Math.max(0, 600 - elapsedSeconds); // 10 minutes = 600 seconds
+                
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 60) {
+                    timerDisplay.classList.add('timer-warning');
+                    timerDisplay.parentElement.classList.replace('bg-blue-100', 'bg-red-100');
+                    timerDisplay.parentElement.classList.replace('text-blue-800', 'text-red-800');
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert("സമയം കഴിഞ്ഞു! നിങ്ങളുടെ ഉത്തരങ്ങൾ ഓട്ടോമാറ്റിക്കായി സബ്മിറ്റ് ചെയ്യപ്പെടുന്നു.");
+                    submitQuiz(true); // force submit
+                }
+            };
+
+            updateTimer(); // Call immediately
+            timerInterval = setInterval(updateTimer, 1000);
+        };
+
+        window.startQuiz = async () => {
+            const name = document.getElementById('name').value.trim();
+            const place = document.getElementById('place').value.trim();
+            const mobile = document.getElementById('mobile').value.trim();
+
+            if(!ALLOWED_MOBILES.includes(mobile)) {
+                return alert("ഈ മൊബൈൽ നമ്പറിന് പ്രവേശനമില്ല. ദയവായി ലിസ്റ്റിലുള്ള ഫോർമാറ്റിൽ തന്നെ നമ്പർ നൽകുക (ഉദാഹരണം: 91-7034253576).");
+            }
+            if (!name || !place) {
+                return alert("പേരും സ്ഥലവും നൽകുക.");
+            }
+            
+            // save to cache once validated
+            localStorage.setItem('tlj_student', JSON.stringify({ name, place, raw_mobile: document.getElementById('mobile').value }));
+            
+            try { await signInAnonymously(auth); } catch (e) { console.error("Auth error", e); }
+
+            // Fetch global control status
+            try {
+                const controlSnap = await getDoc(controlDocRef);
+                if (controlSnap.exists()) {
+                    globalControlStatus = controlSnap.data();
+                } else {
+                    globalControlStatus = { isOpen: { round1: true, round2: false, round3: false, round4: false, showResults: false }};
+                }
+            } catch (e) {
+                console.error("Error setting control defaults", e);
+                return alert("നെറ്റ്‌വർക്ക് തകരാർ! ദയവായി വീണ്ടും ശ്രമിക്കുക.");
+            }
+
+            // Fetch student data
+            let dData = null;
+            try {
+                const qSnap = await getDocs(query(resultsCol, where("mobile", "==", mobile)));
+                if(!qSnap.empty) {
+                    dData = qSnap.docs[0].data();
+                }
+            } catch (err) {
+                console.error("DB Error", err);
+                return alert("നെറ്റ്‌വർക്ക് പ്രശ്‌നം കാരണം പ്രവേശിക്കാൻ സാധിച്ചില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.");
+            }
+
+            // Determine Target Round
+            targetRound = null;
+            let pendingApproval = false;
+            
+            for (let i = 1; i <= 4; i++) {
+                if (!dData || !dData[`round${i}`]) {
+                    targetRound = `round${i}`;
+                    break;
+                } else if (!dData[`round${i}`].approved) {
+                    pendingApproval = true;
+                    break;
+                }
+            }
+
+            if (pendingApproval) {
+                return alert("നിങ്ങൾ ഇതിനകം ക്വിസ് പൂർത്തിയാക്കി കഴിഞ്ഞു. റിസൾട്ട് അഡ്മിൻ അപ്രൂവലിനായി കാത്തിരിക്കുന്നു.");
+            }
+
+            // Check if admin published results OR if they have no eligible target round
+            if (!targetRound && globalControlStatus.isOpen.showResults) {
+                // Completed all 4 rounds and results are published!
+                showStudentResultsScreen(dData);
+                return;
+            } else if (!targetRound) {
+                // Completed all 4 rounds but results not published
+                return alert("നിങ്ങൾ പൂർണ്ണമായും ക്വിസ് പൂർത്തിയാക്കിയിരിക്കുന്നു. ഗ്രാൻഡ് ഫിനാലെ ഫൈനൽ റിസൾട്ടിനായി കാത്തിരിക്കുക.");
+            }
+
+            // Target round exists, check if it's open
+            if (globalControlStatus.isOpen && globalControlStatus.isOpen[targetRound] === true) {
+                // Proceed to round
+                questions = grandQuestions[targetRound];
+                studentData = { name, place, mobile };
+                
+                // Resume selections if any from previous partially completed session
+                const savedSelections = localStorage.getItem('tlj_finalexamvr26_selections');
+                if (savedSelections) {
+                    try {
+                        selections = JSON.parse(savedSelections);
+                    } catch (e) {}
+                }
+
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+                
+                // Update UI to reflect current round
+                document.getElementById('round-header').innerText = `GRAND FINALE - ${targetRound.toUpperCase()}`;
+
+                renderQuestion();
+                startTimer();
+            } else {
+                // It is closed.
+                if (globalControlStatus.isOpen && globalControlStatus.isOpen.showResults && dData) {
+                    // It's closed, but results are published. (e.g., they only did round 1, round 2 is closed, and admin published)
+                    showStudentResultsScreen(dData);
+                    return;
+                } else {
+                    return alert(`${targetRound.toUpperCase()} പരീക്ഷ ഇപ്പോൾ ക്ലോസ് ചെയ്തിരിക്കുകയാണ്. കാത്തിരിക്കുക.`);
+                }
+            }
+        };
+
+        const showStudentResultsScreen = (dData) => {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('student-result-screen').classList.remove('hidden');
+            document.getElementById('student-result-name').innerText = dData.name;
+            document.getElementById('student-result-mobile').innerText = dData.mobile;
+            document.getElementById('student-result-place').innerText = dData.place;
+            renderStudentAnswersSummary(dData);
+        };
+
+        window.renderQuestion = () => {
+            const q = questions[currentQ];
+            document.getElementById('q-number').innerText = `Question ${currentQ + 1} of 10`;
+            document.getElementById('q-text').innerText = `${currentQ + 1}. ${q.q}`;
+            ['a','b','c','d'].forEach(l => {
+                const btn = document.getElementById('opt-'+l);
+                btn.innerText = `${l.toUpperCase()}. ${q[l]}`;
+                const isSelected = selections[currentQ] && selections[currentQ].includes(l);
+                btn.className = isSelected 
+                    ? "w-full p-4 border-2 border-blue-600 bg-blue-50 text-blue-900 rounded-xl text-left transition-all" 
+                    : "w-full p-4 border border-slate-200 bg-white text-slate-700 rounded-xl text-left hover:border-blue-300 transition-all";
+            });
+            
+            document.getElementById('prev-btn').classList.toggle('hidden', currentQ === 0);
+            if(currentQ === 9) {
+                document.getElementById('next-btn').innerText = "റിവ്യൂവിലേക്ക്";
+            } else {
+                document.getElementById('next-btn').innerText = "അടുത്തത്";
+            }
+        };
+
+        window.selectOpt = (opt) => { 
+            if (!selections[currentQ]) selections[currentQ] = [];
+            if (selections[currentQ].includes(opt)) {
+                selections[currentQ] = selections[currentQ].filter(item => item !== opt);
+            } else {
+                selections[currentQ].push(opt);
+            }
+            localStorage.setItem('tlj_finalexamvr26_selections', JSON.stringify(selections));
+            renderQuestion(); 
+        };
+        
+        window.goNext = () => {
+            if (currentQ < 9) { currentQ++; renderQuestion(); } 
+            else { showReview(); }
+        };
+
+        window.goPrev = () => {
+            if (currentQ > 0) { currentQ--; renderQuestion(); }
+        };
+
+        window.goBackToQuiz = () => {
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            renderQuestion();
+        };
+
+        window.showReview = () => {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('review-screen').classList.remove('hidden');
+            const list = document.getElementById('review-list');
+            list.innerHTML = questions.map((q, i) => {
+                const isSelected = selections[i] && selections[i].length > 0;
+                const cardClass = isSelected 
+                    ? "p-4 bg-white rounded-lg mb-3 border border-blue-100 shadow-sm relative pr-14"
+                    : "p-4 bg-red-50 rounded-lg mb-3 border border-red-300 shadow-sm relative pr-14";
+                const btnClass = isSelected
+                    ? "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200"
+                    : "bg-red-100 text-red-800 border-red-300 hover:bg-red-200 animate-pulse";
+                const selectedText = isSelected ? [...selections[i]].sort().map(s=>s.toUpperCase()).join(',') : '?';
+                
+                return `
+                <div class="${cardClass}">
+                    <button onclick="goToQuestionFromReview(${i})" class="absolute top-4 right-4 h-8 px-2 min-w-[32px] rounded-full font-bold flex items-center justify-center shadow-sm transition-colors cursor-pointer border ${btnClass}" title="ചോദ്യത്തിലേക്ക് തിരികെ പോവുക">
+                        ${selectedText}
+                    </button>
+                    <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
+                    <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        ${['a','b','c','d'].map(opt => `
+                            <label class="flex items-center gap-2 p-2 border rounded-lg cursor-pointer ${selections[i].includes(opt) ? 'bg-blue-50 border-blue-200 text-blue-900 font-bold' : 'bg-white border-slate-200'}">
+                                <input type="checkbox" onchange="updateSelection(${i}, '${opt}')" ${selections[i].includes(opt) ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                                <span>${opt.toUpperCase()}. ${q[opt]}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        };
+
+        window.goToQuestionFromReview = (index) => {
+            currentQ = index;
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            renderQuestion();
+        };
+
+        window.updateSelection = (index, val) => { 
+            if (!selections[index]) selections[index] = [];
+            if (selections[index].includes(val)) {
+                selections[index] = selections[index].filter(item => item !== val);
+            } else {
+                selections[index].push(val);
+            }
+            localStorage.setItem('tlj_finalexamvr26_selections', JSON.stringify(selections));
+            showReview(); // Re-render to update the top-right button letter
+        };
+
+        window.submitQuiz = async (autoSubmit = false) => {
+            if (timerInterval) clearInterval(timerInterval);
+            if (!targetRound) return; // safeguard
+            
+            const score = selections.filter((s, i) => {
+                const correctArr = Array.isArray(questions[i].correct) ? questions[i].correct : [questions[i].correct];
+                if (!s || s.length !== correctArr.length) return false;
+                const sortedS = [...s].sort();
+                const sortedC = [...correctArr].sort();
+                return sortedS.every((val, index) => val === sortedC[index]);
+            }).length;
+            const roundPayload = { score, selections, approved: false, at: serverTimestamp() };
+            
+            // We use the mobile number as the document ID so we can easily update it across 4 rounds
+            const docRef = doc(db, "grand_finale_results", studentData.mobile);
+            const dataToSet = { name: studentData.name, place: studentData.place, mobile: studentData.mobile };
+            dataToSet[targetRound] = roundPayload;
+            
+            await setDoc(docRef, dataToSet, { merge: true });
+            
+            localStorage.removeItem('tlj_finalexamvr26_start');
+            localStorage.removeItem('tlj_finalexamvr26_selections');
+
+            if (autoSubmit) {
+                document.getElementById('quiz-screen').classList.add('hidden');
+            }
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('finish-screen').classList.remove('hidden');
+        };
+
+        // ADMIN LOGIC
+        window.checkAdmin = () => {
+            const pw = prompt("Password നൽകുക:");
+            if(pw === "admin456") {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('admin-screen').classList.remove('hidden');
+                loadAdminData();
+                loadExamStatus();
+            }
+        };
+
+        async function loadAdminData() {
+            try { await signInAnonymously(auth); } catch(e) {}
+            try {
+                const snap = await getDocs(resultsCol);
+                const tbody = document.getElementById('admin-table-body');
+                tbody.innerHTML = '';
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const r1 = d.round1;
+                    const r2 = d.round2;
+                    const r3 = d.round3;
+                    const r4 = d.round4;
+                    
+                    const formatR = (r) => {
+                        if (!r) return '<span class="text-slate-400">NA</span>';
+                        return r.approved 
+                            ? `<span class="text-green-600 font-bold">${r.score}</span>` 
+                            : `<span class="text-amber-500 font-bold">${r.score} (P)</span>`;
+                    };
+
+                    let hasPending = (r1 && !r1.approved) || (r2 && !r2.approved) || (r3 && !r3.approved) || (r4 && !r4.approved);
+
+                    tbody.innerHTML += `
+                        <tr class="border-b border-blue-50 text-[11px]">
+                            <td class="p-3 font-medium">${d.name}</td>
+                            <td class="p-3 text-slate-500 tracking-wider">${d.mobile}</td>
+                            <td class="p-3">${formatR(r1)}</td>
+                            <td class="p-3">${formatR(r2)}</td>
+                            <td class="p-3">${formatR(r3)}</td>
+                            <td class="p-3">${formatR(r4)}</td>
+                            <td class="p-3 flex gap-2">
+                                <button onclick="deleteEntry('${docSnap.id}')" class="text-red-500 hover:underline">Del</button>
+                                ${hasPending ? `<button onclick="approveEntry('${docSnap.id}')" class="text-blue-600 font-bold hover:underline">Approve</button>` : ''}
+                            </td>
+                        </tr>`;
+                });
+            } catch (err) {
+                console.error("Admin Load Error", err);
+                alert("ഡാറ്റ ലഭ്യമാക്കുന്നതിൽ പിശക്. ഇന്റർനെറ്റ് പരിശോധിക്കുക.");
+            }
+        }
+
+        window.exportExcel = async () => {
+            const snap = await getDocs(resultsCol);
+            const data = snap.docs.map(docSnap => {
+                const d = docSnap.data();
+                const obj = { Name: d.name, Place: d.place, Mobile: d.mobile };
+                [1,2,3,4].forEach(i => {
+                    if (d[`round${i}`]) {
+                        obj[`R${i}_Score`] = d[`round${i}`].score;
+                        obj[`R${i}_Appr`] = d[`round${i}`].approved;
+                    } else {
+                        obj[`R${i}_Score`] = 'NA';
+                        obj[`R${i}_Appr`] = 'NA';
+                    }
+                });
+                return obj;
+            });
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "GrandFinaleList");
+            XLSX.writeFile(wb, "GrandFinale.xlsx");
+        };
+
+        window.approveAll = async () => {
+            if(!confirm("എല്ലാ വിദ്യാർത്ഥികളുടെയും പരീക്ഷകൾ അപ്രൂവ് ചെയ്യണോ?")) return;
+            const snap = await getDocs(resultsCol);
+            const batch = writeBatch(db);
+            snap.forEach(d => {
+                const docData = d.data();
+                let needsUpdate = false;
+                const updatePayload = {};
+                [1,2,3,4].forEach(i => {
+                    const r = `round${i}`;
+                    if (docData[r] && !docData[r].approved) {
+                        updatePayload[`${r}.approved`] = true;
+                        needsUpdate = true;
+                    }
+                });
+                if (needsUpdate) {
+                    batch.update(d.ref, updatePayload);
+                }
+            });
+            await batch.commit();
+            loadAdminData();
+        };
+
+        window.deleteEntry = async (id) => { if(confirm("ഈ എൻട്രി നീക്കം ചെയ്യണോ?")) { await deleteDoc(doc(db, "grand_finale_results", id)); loadAdminData(); } };
+        
+        window.approveEntry = async (id) => { 
+            const docRef = doc(db, "grand_finale_results", id);
+            const dSnap = await getDoc(docRef);
+            if (dSnap.exists()) {
+                const dData = dSnap.data();
+                const updatePayload = {};
+                [1,2,3,4].forEach(i => {
+                    const r = `round${i}`;
+                    if (dData[r] && !dData[r].approved) {
+                        updatePayload[`${r}.approved`] = true;
+                    }
+                });
+                await updateDoc(docRef, updatePayload);
+                loadAdminData(); 
+            }
+        };
+
+        window.loadExamStatus = async () => {
+            try {
+                const docSnap = await getDoc(controlDocRef);
+                const defaultState = { round1: true, round2: false, round3: false, round4: false, showResults: false };
+                let currentStatus = defaultState;
+                if (docSnap.exists() && docSnap.data().isOpen) {
+                    currentStatus = { ...defaultState, ...docSnap.data().isOpen };
+                }
+                globalControlStatus = { isOpen: currentStatus };
+                
+                ['round1', 'round2', 'round3', 'round4', 'showResults'].forEach(key => {
+                    updateExamStatusButton(key, currentStatus[key]);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        window.updateExamStatusButton = (key, isOpen) => {
+            const btn = document.getElementById(`exam-status-btn-${key}`);
+            if (!btn) return;
+            
+            let label = key.toUpperCase();
+            if (key === 'showResults') label = "PUBLISH RESULTS";
+            
+            if (isOpen) {
+                btn.innerText = `${label}: ON`;
+                btn.className = "bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors";
+                btn.dataset.status = "open";
+            } else {
+                btn.innerText = `${label}: OFF`;
+                btn.className = "bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm hover:bg-red-700 transition-colors";
+                btn.dataset.status = "closed";
+            }
+        };
+
+        window.toggleExamStatus = async (key) => {
+            const btn = document.getElementById(`exam-status-btn-${key}`);
+            const isCurrentlyOpen = btn.dataset.status === "open";
+            const newStatus = !isCurrentlyOpen;
+            if (confirm(`${key.toUpperCase()} ${newStatus ? 'OPEN' : 'CLOSE'} ചെയ്യണോ?`)) {
+                
+                // Initialize if doesn't exist
+                await setDoc(controlDocRef, { }, { merge: true });
+                // Merge specific key
+                await setDoc(controlDocRef, { isOpen: { [key]: newStatus } }, { merge: true });
+                
+                updateExamStatusButton(key, newStatus);
+            }
+        };
+
+        window.onload = () => {
+            const cached = localStorage.getItem('tlj_student');
+            if(cached) {
+                try {
+                    const data = JSON.parse(cached);
+                    if(data.name) document.getElementById('name').value = data.name;
+                    if(data.place) document.getElementById('place').value = data.place;
+                    if(data.raw_mobile) document.getElementById('mobile').value = data.raw_mobile;
+                } catch(e) {}
+            }
+        };
+
+        signInAnonymously(auth);
+    </script>
+</head>
+<body class="p-4 flex flex-col items-center min-h-screen">
+    <div class="max-w-xl w-full glass rounded-[2.5rem] shadow-2xl overflow-hidden">
+        <div class="blue-gradient p-8 text-center text-white">
+            <h1 class="text-2xl font-bold">വെളിച്ചം റമദാൻ <br> 2026 (VR2026)</h1>
+            <p class="text-blue-100 text-xs mt-2"><a href="https://velichamsaudionline.com/" target="_blank" class="hover:text-white underline transition-colors">velichamsaudionline.com</a></p>
+        </div>
+
+        <div class="p-8">
+            <div id="login-screen" class="space-y-4">
+                <input type="text" id="name" placeholder="പൂർണ്ണ നാമം (Name)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="text" id="place" placeholder="സ്ഥലം (Place)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="text" id="mobile" placeholder="മൊബൈൽ (eg: 91-7034253576)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <button onclick="startQuiz()" class="w-full blue-gradient text-white p-5 rounded-2xl font-bold shadow-lg hover:scale-[1.02] active:scale-95 transition-all">പ്രവേശിക്കുക</button>
+                <button onclick="checkAdmin()" class="w-full text-slate-400 text-[10px] mt-6 hover:text-blue-500 uppercase tracking-widest">Admin Access</button>
+            </div>
+
+            <div id="quiz-screen" class="hidden">
+                <div class="mb-4 text-center">
+                   <h2 id="round-header" class="text-blue-900 font-extrabold text-xl tracking-tight mb-4">GRAND FINALE</h2>
+                </div>
+                <div class="mb-4 flex justify-between items-center text-center">
+                    <span id="q-number" class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider"></span>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full tracking-wider flex items-center gap-1 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                        </svg>
+                        <span id="timer-display">10:00</span>
+                    </span>
+                </div>
+                <div id="q-text" class="font-bold text-slate-800 text-lg mb-8 leading-relaxed"></div>
+                <div class="space-y-3">
+                    <button id="opt-a" onclick="selectOpt('a')" class="w-full p-4 border rounded-xl"></button>
+                    <button id="opt-b" onclick="selectOpt('b')" class="w-full p-4 border rounded-xl"></button>
+                    <button id="opt-c" onclick="selectOpt('c')" class="w-full p-4 border rounded-xl"></button>
+                    <button id="opt-d" onclick="selectOpt('d')" class="w-full p-4 border rounded-xl"></button>
+                </div>
+                <div class="flex justify-between items-center mt-10">
+                    <button id="prev-btn" onclick="goPrev()" class="bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold shadow-sm hidden transition-colors hover:bg-slate-300">മുമ്പത്തെ</button>
+                    <!-- hidden sm:block added to hide link on very small screens if needed, else mx-auto keeps it centered -->
+                    <button onclick="showReview()" class="text-blue-600 text-[10px] sm:text-xs font-bold underline mx-auto">സബ്മിറ്റ് ഏരിയ</button>
+                    <button id="next-btn" onclick="goNext()" class="blue-gradient text-white px-6 py-3 rounded-xl font-bold shadow-md transition-transform hover:scale-105">അടുത്തത്</button>
+                </div>
+            </div>
+
+            <div id="review-screen" class="hidden">
+                <h2 class="font-bold text-slate-800 mb-6 text-center">നിങ്ങളുടെ ഉത്തരങ്ങൾ പരിശോധിക്കുക</h2>
+                <div id="review-list" class="max-h-[350px] overflow-y-auto mb-6 pr-2"></div>
+                <div class="flex gap-4">
+                    <button onclick="goBackToQuiz()" class="w-1/3 bg-slate-200 text-slate-700 p-5 rounded-2xl font-bold shadow-sm transition-colors hover:bg-slate-300">തിരികെ</button>
+                    <button onclick="submitQuiz()" class="w-2/3 blue-gradient text-white p-5 rounded-2xl font-bold shadow-lg transition-transform hover:scale-[1.02]">ഫൈനൽ സബ്മിറ്റ്</button>
+                </div>
+            </div>
+
+            <div id="admin-screen" class="hidden">
+                <div class="flex flex-col mb-6 gap-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="font-bold text-blue-900">Admin Control</h2>
+                        <div class="flex gap-2">
+                            <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-blue-700 transition-colors">HOME</button>
+                            <button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors">EXCEL REPORT</button>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl justify-center">
+                        <button id="exam-status-btn-round1" onclick="toggleExamStatus('round1')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R1: L</button>
+                        <button id="exam-status-btn-round2" onclick="toggleExamStatus('round2')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R2: L</button>
+                        <button id="exam-status-btn-round3" onclick="toggleExamStatus('round3')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R3: L</button>
+                        <button id="exam-status-btn-round4" onclick="toggleExamStatus('round4')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R4: L</button>
+                        <div class="w-px bg-blue-200 mx-1"></div>
+                        <button id="exam-status-btn-showResults" onclick="toggleExamStatus('showResults')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">PUB: L</button>
+                    </div>
+                </div>
+                <!-- ... rest of admin logic ... -->
+                <button onclick="approveAll()" class="w-full bg-blue-100 text-blue-700 py-3 rounded-xl mb-6 text-xs font-bold hover:bg-blue-200 transition-colors">APPROVE ALL STUDENTS</button>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[10px] text-slate-500 border-b border-blue-100 uppercase bg-blue-50/50">
+                                <th class="p-3">Name</th>
+                                <th class="p-3">Mobile</th>
+                                <th class="p-3">R1</th>
+                                <th class="p-3">R2</th>
+                                <th class="p-3">R3</th>
+                                <th class="p-3">R4</th>
+                                <th class="p-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="finish-screen" class="hidden text-center py-10">
+                <h2 class="text-2xl font-bold text-green-600 mb-4">പരീക്ഷ പൂർത്തിയായി!</h2>
+                <p class="text-slate-600">അഡ്മിൻ അപ്രൂവ് ചെയ്ത ശേഷം നിങ്ങളുടെ മാർക്ക് പരിശോധിക്കാവുന്നതാണ്.</p>
+                <button onclick="location.reload()" class="mt-8 text-blue-600 text-xs font-bold underline">Home</button>
+            </div>
+
+            <div id="student-result-screen" class="hidden text-center py-10">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">GRAND FINALE RESULTS</h2>
+                <div class="text-5xl font-extrabold text-blue-600 mb-2" id="student-score-display">0/40</div>
+                <p class="text-slate-600 font-medium mb-6">Total score across approved rounds</p>
+                
+                <div class="bg-blue-50 p-4 rounded-xl mb-6 text-sm text-left border border-blue-100 shadow-sm w-full">
+                    <p class="mb-2"><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">പേര് (Name):</span> <br><span id="student-result-name" class="text-blue-900 font-bold text-base"></span></p>
+                    <p class="mb-2"><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">മൊബൈൽ (Mobile):</span> <br><span id="student-result-mobile" class="text-blue-900 font-bold text-base tracking-wider"></span></p>
+                    <p><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">സ്ഥലം (Place):</span> <br><span id="student-result-place" class="text-blue-900 font-bold text-base"></span></p>
+                </div>
+
+                <div id="student-answers-list" class="max-h-[400px] overflow-y-auto mb-6 pr-2"></div>
+                <!-- We wrap the home button in a flex container so it looks like a nice solid button -->
+                <button onclick="location.reload()" class="w-full bg-slate-200 text-slate-700 p-5 rounded-2xl font-bold shadow-sm transition-colors hover:bg-slate-300">Home</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
