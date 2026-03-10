@@ -314,7 +314,7 @@
             }
 
             // Check if admin published results OR if they have no eligible target round
-            if (!targetRound && globalControlStatus.isOpen.showResults) {
+            if (!targetRound && globalControlStatus.isOpen?.showResults) {
                 // Completed all 4 rounds and results are published!
                 showStudentResultsScreen(dData);
                 return;
@@ -325,8 +325,25 @@
 
             // Target round exists, check if it's open
             if (globalControlStatus.isOpen && globalControlStatus.isOpen[targetRound] === true) {
-                // Proceed to round
-                questions = grandQuestions[targetRound];
+                // Proceed to fetch questions
+                const startBtn = document.querySelector('button[onclick="startQuiz()"]');
+                const origStartTxt = startBtn.innerText;
+                startBtn.innerText = "ചോദ്യങ്ങൾ തയ്യാറാക്കുന്നു...";
+                
+                try {
+                    const qDocSnap = await getDoc(doc(db, "grand_finale_vr26_questions", targetRound));
+                    if (qDocSnap.exists() && qDocSnap.data().questions?.length > 0) {
+                        questions = qDocSnap.data().questions;
+                    } else {
+                        // Fallback to local
+                        questions = grandQuestions[targetRound];
+                    }
+                } catch(err) {
+                    console.error("Failed to fetch custom questions, using fallback", err);
+                    questions = grandQuestions[targetRound];
+                }
+                startBtn.innerText = origStartTxt;
+
                 studentData = { name, place, mobile };
                 
                 // Resume selections if any from previous partially completed session
@@ -368,19 +385,26 @@
 
         window.renderQuestion = () => {
             const q = questions[currentQ];
-            document.getElementById('q-number').innerText = `Question ${currentQ + 1} of 10`;
+            if (!q) return; // safety check
+            
+            document.getElementById('q-number').innerText = `Question ${currentQ + 1} of ${questions.length}`;
             document.getElementById('q-text').innerText = `${currentQ + 1}. ${q.q}`;
             ['a','b','c','d'].forEach(l => {
                 const btn = document.getElementById('opt-'+l);
-                btn.innerText = `${l.toUpperCase()}. ${q[l]}`;
-                const isSelected = selections[currentQ] && selections[currentQ].includes(l);
-                btn.className = isSelected 
-                    ? "w-full p-4 border-2 border-blue-600 bg-blue-50 text-blue-900 rounded-xl text-left transition-all" 
-                    : "w-full p-4 border border-slate-200 bg-white text-slate-700 rounded-xl text-left hover:border-blue-300 transition-all";
+                if (q[l]) {
+                    btn.classList.remove('hidden');
+                    btn.innerText = `${l.toUpperCase()}. ${q[l]}`;
+                    const isSelected = selections[currentQ] && selections[currentQ].includes(l);
+                    btn.className = isSelected 
+                        ? "w-full p-4 border-2 border-blue-600 bg-blue-50 text-blue-900 rounded-xl text-left transition-all" 
+                        : "w-full p-4 border border-slate-200 bg-white text-slate-700 rounded-xl text-left hover:border-blue-300 transition-all";
+                } else {
+                    btn.classList.add('hidden'); // hide if option is suddenly missing
+                }
             });
             
             document.getElementById('prev-btn').classList.toggle('hidden', currentQ === 0);
-            if(currentQ === 9) {
+            if(currentQ === questions.length - 1) {
                 document.getElementById('next-btn').innerText = "റിവ്യൂവിലേക്ക്";
             } else {
                 document.getElementById('next-btn').innerText = "അടുത്തത്";
@@ -399,7 +423,7 @@
         };
         
         window.goNext = () => {
-            if (currentQ < 9) { currentQ++; renderQuestion(); } 
+            if (currentQ < questions.length - 1) { currentQ++; renderQuestion(); } 
             else { showReview(); }
         };
 
@@ -434,7 +458,7 @@
                     </button>
                     <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
                     <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
-                        ${['a','b','c','d'].map(opt => `
+                        ${['a','b','c','d'].filter(opt => q[opt]).map(opt => `
                             <label class="flex items-center gap-2 p-2 border rounded-lg cursor-pointer ${selections[i].includes(opt) ? 'bg-blue-50 border-blue-200 text-blue-900 font-bold' : 'bg-white border-slate-200'}">
                                 <input type="checkbox" onchange="updateSelection(${i}, '${opt}')" ${selections[i].includes(opt) ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
                                 <span>${opt.toUpperCase()}. ${q[opt]}</span>
