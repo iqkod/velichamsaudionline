@@ -226,6 +226,8 @@
             // save to cache once validated
             localStorage.setItem('tlj_student', JSON.stringify({ name, place, raw_mobile: document.getElementById('mobile').value }));
             
+            try { await signInAnonymously(auth); } catch (e) { console.error("Auth error", e); }
+
             // Fetch global control status
             try {
                 const controlSnap = await getDoc(controlDocRef);
@@ -236,14 +238,19 @@
                 }
             } catch (e) {
                 console.error("Error setting control defaults", e);
-                return alert("Server Error. Please try again.");
+                return alert("നെറ്റ്‌വർക്ക് തകരാർ! ദയവായി വീണ്ടും ശ്രമിക്കുക.");
             }
 
             // Fetch student data
             let dData = null;
-            const qSnap = await getDocs(query(resultsCol, where("mobile", "==", mobile)));
-            if(!qSnap.empty) {
-                dData = qSnap.docs[0].data();
+            try {
+                const qSnap = await getDocs(query(resultsCol, where("mobile", "==", mobile)));
+                if(!qSnap.empty) {
+                    dData = qSnap.docs[0].data();
+                }
+            } catch (err) {
+                console.error("DB Error", err);
+                return alert("നെറ്റ്‌വർക്ക് പ്രശ്‌നം കാരണം പ്രവേശിക്കാൻ സാധിച്ചില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.");
             }
 
             // Determine Target Round
@@ -438,39 +445,45 @@
         };
 
         async function loadAdminData() {
-            const snap = await getDocs(resultsCol);
-            const tbody = document.getElementById('admin-table-body');
-            tbody.innerHTML = '';
-            snap.forEach(docSnap => {
-                const d = docSnap.data();
-                const r1 = d.round1;
-                const r2 = d.round2;
-                const r3 = d.round3;
-                const r4 = d.round4;
-                
-                const formatR = (r) => {
-                    if (!r) return '<span class="text-slate-400">NA</span>';
-                    return r.approved 
-                        ? `<span class="text-green-600 font-bold">${r.score}</span>` 
-                        : `<span class="text-amber-500 font-bold">${r.score} (P)</span>`;
-                };
+            try { await signInAnonymously(auth); } catch(e) {}
+            try {
+                const snap = await getDocs(resultsCol);
+                const tbody = document.getElementById('admin-table-body');
+                tbody.innerHTML = '';
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const r1 = d.round1;
+                    const r2 = d.round2;
+                    const r3 = d.round3;
+                    const r4 = d.round4;
+                    
+                    const formatR = (r) => {
+                        if (!r) return '<span class="text-slate-400">NA</span>';
+                        return r.approved 
+                            ? `<span class="text-green-600 font-bold">${r.score}</span>` 
+                            : `<span class="text-amber-500 font-bold">${r.score} (P)</span>`;
+                    };
 
-                let hasPending = (r1 && !r1.approved) || (r2 && !r2.approved) || (r3 && !r3.approved) || (r4 && !r4.approved);
+                    let hasPending = (r1 && !r1.approved) || (r2 && !r2.approved) || (r3 && !r3.approved) || (r4 && !r4.approved);
 
-                tbody.innerHTML += `
-                    <tr class="border-b border-blue-50 text-[11px]">
-                        <td class="p-3 font-medium">${d.name}</td>
-                        <td class="p-3 text-slate-500 tracking-wider">${d.mobile}</td>
-                        <td class="p-3">${formatR(r1)}</td>
-                        <td class="p-3">${formatR(r2)}</td>
-                        <td class="p-3">${formatR(r3)}</td>
-                        <td class="p-3">${formatR(r4)}</td>
-                        <td class="p-3 flex gap-2">
-                            <button onclick="deleteEntry('${docSnap.id}')" class="text-red-500 hover:underline">Del</button>
-                            ${hasPending ? `<button onclick="approveEntry('${docSnap.id}')" class="text-blue-600 font-bold hover:underline">Approve</button>` : ''}
-                        </td>
-                    </tr>`;
-            });
+                    tbody.innerHTML += `
+                        <tr class="border-b border-blue-50 text-[11px]">
+                            <td class="p-3 font-medium">${d.name}</td>
+                            <td class="p-3 text-slate-500 tracking-wider">${d.mobile}</td>
+                            <td class="p-3">${formatR(r1)}</td>
+                            <td class="p-3">${formatR(r2)}</td>
+                            <td class="p-3">${formatR(r3)}</td>
+                            <td class="p-3">${formatR(r4)}</td>
+                            <td class="p-3 flex gap-2">
+                                <button onclick="deleteEntry('${docSnap.id}')" class="text-red-500 hover:underline">Del</button>
+                                ${hasPending ? `<button onclick="approveEntry('${docSnap.id}')" class="text-blue-600 font-bold hover:underline">Approve</button>` : ''}
+                            </td>
+                        </tr>`;
+                });
+            } catch (err) {
+                console.error("Admin Load Error", err);
+                alert("ഡാറ്റ ലഭ്യമാക്കുന്നതിൽ പിശക്. ഇന്റർനെറ്റ് പരിശോധിക്കുക.");
+            }
         }
 
         window.exportExcel = async () => {

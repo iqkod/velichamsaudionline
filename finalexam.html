@@ -181,7 +181,16 @@
             // save to cache once validated
             localStorage.setItem('tlj_student', JSON.stringify({ name, place, raw_mobile: document.getElementById('mobile').value }));
             
-            const qSnap = await getDocs(query(resultsCol, where("mobile", "==", mobile)));
+            try { await signInAnonymously(auth); } catch (e) { console.error("Auth error", e); }
+
+            let qSnap;
+            try {
+                qSnap = await getDocs(query(resultsCol, where("mobile", "==", mobile)));
+            } catch (err) {
+                console.error("DB error fetching previously saved:", err);
+                return alert("നെറ്റ്‌വർക്ക് പ്രശ്‌നം കാരണം പ്രവേശിക്കാൻ സാധിച്ചില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.");
+            }
+
             if(!qSnap.empty) {
                 const docData = qSnap.docs[0].data();
                 if (docData.approved) {
@@ -341,23 +350,29 @@
         };
 
         async function loadAdminData() {
-            const snap = await getDocs(resultsCol);
-            const tbody = document.getElementById('admin-table-body');
-            tbody.innerHTML = '';
-            snap.forEach(docSnap => {
-                const d = docSnap.data();
-                tbody.innerHTML += `
-                    <tr class="border-b border-blue-50 text-[11px]">
-                        <td class="p-3 font-medium">${d.name}</td>
-                        <td class="p-3 text-slate-500 tracking-wider">${d.mobile}</td>
-                        <td class="p-3 font-bold text-blue-600">${d.score}/10</td>
-                        <td class="p-3">${d.approved ? '<span class="text-green-600">Approved</span>' : '<span class="text-amber-500">Pending</span>'}</td>
-                        <td class="p-3 flex gap-2">
-                            <button onclick="deleteEntry('${docSnap.id}')" class="text-red-500 hover:underline">Delete</button>
-                            ${!d.approved ? `<button onclick="approveEntry('${docSnap.id}')" class="text-blue-600 font-bold hover:underline">Approve</button>` : ''}
-                        </td>
-                    </tr>`;
-            });
+            try { await signInAnonymously(auth); } catch(e) {}
+            try {
+                const snap = await getDocs(resultsCol);
+                const tbody = document.getElementById('admin-table-body');
+                tbody.innerHTML = '';
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    tbody.innerHTML += `
+                        <tr class="border-b border-blue-50 text-[11px]">
+                            <td class="p-3 font-medium">${d.name}</td>
+                            <td class="p-3 text-slate-500 tracking-wider">${d.mobile}</td>
+                            <td class="p-3 font-bold text-blue-600">${d.score}/10</td>
+                            <td class="p-3">${d.approved ? '<span class="text-green-600">Approved</span>' : '<span class="text-amber-500">Pending</span>'}</td>
+                            <td class="p-3 flex gap-2">
+                                <button onclick="deleteEntry('${docSnap.id}')" class="text-red-500 hover:underline">Delete</button>
+                                ${!d.approved ? `<button onclick="approveEntry('${docSnap.id}')" class="text-blue-600 font-bold hover:underline">Approve</button>` : ''}
+                            </td>
+                        </tr>`;
+                });
+            } catch (err) {
+                console.error("Admin Load Error", err);
+                alert("ഡാറ്റ ലഭ്യമാക്കുന്നതിൽ പിശക്. ഇന്റർനെറ്റ് പരിശോധിക്കുക.");
+            }
         }
 
         window.exportExcel = async () => {
