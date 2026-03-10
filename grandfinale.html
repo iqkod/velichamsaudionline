@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>വെളിച്ചം റമദാൻ 2026(VR2026) - Quiz</title>
+    <title>വെളിച്ചം റമദാൻ 2026(VR2026) - Grand Finale</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -32,8 +32,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const resultsCol = collection(db, "artifacts/thelightjuniors/public/data/quiz_results");
-        const controlDocRef = doc(db, "artifacts/thelightjuniors/public/data", "quiz_control");
+        const resultsCol = collection(db, "artifacts/thelightjuniors/public/data/grand_finale_results");
+        const controlDocRef = doc(db, "artifacts/thelightjuniors/public/data/settings/grand_finale_control");
 
         // CLEANED ALLOWED LIST (With dashes for display/matching)
         const ALLOWED_MOBILES = [
@@ -96,11 +96,13 @@
         let currentQ = 0;
         let timerInterval = null;
         let timeLeft = 600; // 10 minutes in seconds
+        let targetRound = null; // To track which round the student is currently taking
+        let globalControlStatus = {};
 
-        const questions = [
+        const baseQuestions = [
             { q: "................ എന്നും, ................ എന്നും, ................ എന്നും ഖുർആൻ മുഖേന സത്യം ചെയ്തു കൊണ്ടാണ് അല്ലാഹു സൂറത്തു യാസീൻ ആരംഭിക്കുന്നത്. താഴെ നൽകിയവയിൽ വിട്ടഭാഗങ്ങളോട് യോജിക്കാത്തത് ഏത് ?", a: "‘യാസീൻ’ എന്നാൽ അർത്ഥമാക്കുന്നത് ‘ഹേ, മനുഷ്യാ’ എന്നാണ്", b: "നബി (സ) അല്ലാഹുവിൻറെ റസൂലാണ്", c: "നബി (സ) സ്വീകരിച്ചിട്ടുള്ള മാർഗം യാതൊരു വക്രതയുമില്ലാത്ത നേരായ മാർഗമാണ്", d: "അത് (ഖുർആൻ) അല്ലാഹു അവതരിപ്പിച്ചത് തന്നെയാണ്", correct: "a" },
             { q: "..................... എന്നു പറഞ്ഞതിൻറെ ഉദ്ദേശം, മേലിൽ ഹൃദയപരിവർത്തനം വന്ന് നന്നായിത്തീരുവാൻ മാർഗമില്ലാത്തവിധം അവരുടെ ഹൃദയങ്ങൾ ദൂഷിച്ചുപോയിട്ടുണ്ടെന്നും, അതിനാൽ ശിക്ഷയെ സംബന്ധിച്ച താക്കീതു അവരിൽ ബാധകമായിക്കഴിഞ്ഞിട്ടുണ്ടെന്നും ആകുന്നു.", a: "എനി അവർ വിശ്വസിക്കുകയില്ല (فَهُمْ لَا يُؤْمِنُونَ)", b: "വാക്കു സ്ഥിരപ്പെട്ടു (حَقَّ الْقَوْلُ)", c: "അതിനാൽ അവർ അശ്രദ്ധരാണ് (فَهُمْ غَافِلُونَ)", d: "അവരിൽ സമമാണ് (سَوَاءٌ عَلَيْهِمْ)", correct: "b" },
-            { q: "ആ മുശ്‌രിക്കുകളെ താക്കീതു ചെയ്താലും ഇല്ലെങ്കിലും കാര്യമില്ല, അവർ വിശ്വസിക്കില്ല. കാരണം അവരുടെ ഹൃദയം അത്രത്തോളം കഠിനമായിരിക്കുന്നു. ഇത് വ്യക്തമാക്കാൻ അല്ലാഹു പറയുന്ന ഉപമകളിൽ നിന്നും ചില പ്രയോഗങ്ങളെ താഴെ നൽകുന്നു, അവയിൽ പെടാത്തത് ഏത്?", a: "കഴുത്തുകളിൽ താടിയെല്ലുകൾ വരെയുള്ള ആമങ്ങൾ ഏർപ്പെടുത്തി", b: "അതിനാൽ അവർ തലപൊക്കപ്പെട്ടവരാകുന്നു", c: "മുമ്പിൽ ഒരു തടവും പിമ്പിൽ ഒരു തടവും നൽകി അവരെ മൂടിയിരിക്കുന്നു", d: "അതിനാൽ അവർ അനുസരണയുള്ളവരാണ്", correct: "d" },
+            { q: "ആ മുശ്‌രിക്കുകളെ താക്കീതു ചെയ്താലും ഇല്ലെങ്കിലും കാര്യമില്ല, അവർ വിശ്വസിക്കില്ല. കാരണം അവരുടെ ഹൃദയം അത്രത്തോളം കഠിനമായിരിക്കുന്നു. ഇത് വ്യക്തമാക്കാൻ അല്ലാഹു പറയുന്ന ഉപമകളിൽ നിന്നും ചില പ്രയോഗങ്ങളെ താഴെ നൽകുന്നു, അവയിൽ പെടാത്തത് ഏത്?", a: "കഴുത്തുകളിൽ താടിയെല്ലുകൾ വരെയുള്ള ആമങ്ങൾ ഏർപ്പെടുത്തി", b: "അതിനാൽ അവർ തലപൊക്കപ്പെട്ടവരാകുന്നു", c: "മുമ്പിൽ ഒരു തടവും പിമ്പിൽ ഇരു തടവും നൽകി അവരെ മൂടിയിരിക്കുന്നു", d: "അതിനാൽ അവർ അനുസരണയുള്ളവരാണ്", correct: "d" },
             { q: "ഒരാളൊരു നല്ല നടപടി ക്രമം നടപ്പിലാക്കിയാൽ അയാൾക്ക് ലഭിക്കുന്ന പ്രതിഫലമായി ബന്ധപ്പെട്ട് ശരിയായത് ..........", a: "അവന്നു അതിൻറെ പ്രതിഫലമുണ്ട്", b: "അവന്നു ശേഷം അതനുസരിച്ച് പ്രവർത്തിക്കുന്നവരുടെ പ്രതിഫലവുമുണ്ട്", c: "അവരുടെ പ്രതിഫലങ്ങളിൽ ഒട്ടും കുറവ് വരാതെതന്നെ അവന്നു പ്രതിഫലം ഉണ്ടായിരിക്കും", d: "എല്ലാം ശരിയാണ്", correct: "d" },
             { q: "ദൂതന്മാരെ കള്ളവാക്കിയ ജനതയുടെ ഒരു പ്രസ്താവനയാണ്; \"...................... ൽ നിന്ന് നിങ്ങൾക്ക് തീർച്ചയായും വേദനയേറിയ ശിക്ഷ ബാധിക്കുന്നതാണ്\". ഇവിടെ വിട്ടഭാഗത്ത് ഉദ്ദേശിച്ചത് ആരെയാണ്?", a: "അല്ലാഹുവിൽ നിന്ന്", b: "ആ ജനതയിൽ നിന്ന്", c: "ഫിർഔനിൽ നിന്ന്", d: "സ്വാലിഹു (അ) നബിയുടെ ജനതയിൽ നിന്ന്", correct: "b" },
             { q: "പട്ടണത്തിൻറെ അങ്ങേ അറ്റത്തു നിന്ന് ഓടി വന്ന മനുഷ്യൻ ആ ജനതയോട് ഉപദേശിച്ച ചില വാക്യങ്ങളെ നൽകുന്നു. ഒന്ന് അവയിൽ പെടുന്നില്ല, ഏത്?", a: "അവന്നു പുറമെ വല്ല ദൈവങ്ങളെയും ഞാൻ സ്വീകരിക്കുകയോ?", b: "എൻറെ ജനങ്ങൾ അറിഞ്ഞിരുന്നുവെങ്കിൽ നന്നായേനെ", c: "എന്നെ സൃഷ്ടിച്ചുണ്ടാക്കിയവനെ ഞാൻ ആരാധന ചെയ്യാതിരിക്കുവാൻ എനിക്ക് എന്താണ് തടസ്സം", d: "നിശ്ചയമായും ഞാൻ നിങ്ങളുടെ രക്ഷിതാവിൽ വിശ്വസിച്ചിരിക്കുന്നു", correct: "b" },
@@ -110,26 +112,66 @@
             { q: "മുൻസമുദായങ്ങൾക്ക് ബാധിച്ചതു പോലെയുള്ള ഐഹിക ശിക്ഷകളെ നിങ്ങൾ സൂക്ഷിക്കണം, വരാനിരിക്കുന്ന പരലോക ശിക്ഷയെയും നിങ്ങൾ സൂക്ഷിക്കണം, എന്നാൽ നിങ്ങൾ ................", a: "സൂക്ഷ്മതയുള്ളവരായേക്കാം", b: "വിജയികളായേക്കാം", c: "കരുണ ചെയ്യപ്പെട്ടേക്കാം", d: "നേർവഴി കാണിക്കപ്പെട്ടേക്കാം", correct: "c" }
         ];
 
-        window.renderStudentAnswers = (docData) => {
+        // Currently using placeholders for Rounds 2-4. Change these as needed!
+        const grandQuestions = {
+            round1: [...baseQuestions],
+            round2: [...baseQuestions],
+            round3: [...baseQuestions],
+            round4: [...baseQuestions]
+        };
+
+        let questions = grandQuestions.round1; // Default, overrides later
+
+
+        window.renderStudentAnswersSummary = (docData) => {
             const container = document.getElementById('student-answers-list');
             if(container) {
-                container.innerHTML = questions.map((q, i) => {
-                    const selected = docData.selections[i];
-                    const isCorrect = selected === q.correct;
-                    const optLetter = selected ? selected.toUpperCase() : 'N/A';
-                    const optText = selected && q[selected] ? q[selected] : 'ഉത്തരം നൽകിയിട്ടില്ല';
-                    
-                    return `
-                    <div class="p-4 bg-white rounded-lg mb-3 border ${isCorrect ? 'border-green-200' : 'border-red-200'} shadow-sm text-left">
-                        <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
-                        <p class="text-xs mt-2 ${isCorrect ? 'text-green-700' : 'text-red-700'} font-semibold">
-                            നിങ്ങളുടെ ഉത്തരം: ${optLetter}. ${optText}
-                            ${isCorrect ? ' <span class="text-green-500 ml-1">✓</span>' : ' <span class="text-red-500 ml-1">✗</span>'}
-                        </p>
-                        ${!isCorrect ? `<p class="text-xs mt-1 text-green-700 font-semibold">ശരിയായ ഉത്തരം: ${q.correct.toUpperCase()}. ${q[q.correct]}</p>` : ''}
-                    </div>
-                    `;
+                container.innerHTML = [1, 2, 3, 4].map(roundNum => {
+                    const roundKey = `round${roundNum}`;
+                    const roundData = docData[roundKey];
+                    if (!roundData) {
+                        return `
+                        <div class="p-4 bg-slate-100 rounded-lg mb-3 border border-slate-200 shadow-sm flex justify-between items-center">
+                            <span class="font-bold text-slate-500">Round ${roundNum}</span>
+                            <span class="font-bold text-slate-400">NA</span>
+                        </div>`;
+                    } else if (roundData.approved) {
+                        return `
+                        <div class="p-4 bg-white rounded-lg mb-3 border border-green-200 shadow-sm flex justify-between items-center">
+                            <span class="font-bold text-slate-800">Round ${roundNum}</span>
+                            <span class="font-bold text-green-600 text-lg">${roundData.score}/10</span>
+                        </div>`;
+                    } else {
+                        return `
+                        <div class="p-4 bg-white rounded-lg mb-3 border border-amber-200 shadow-sm flex justify-between items-center">
+                            <span class="font-bold text-slate-800">Round ${roundNum}</span>
+                            <span class="font-bold text-amber-500 text-sm italic">Pending Approval</span>
+                        </div>`;
+                    }
                 }).join('');
+            }
+            
+            // Calculate total score if all attended are approved
+            let total = 0;
+            let allApproved = true;
+            let anyAttended = false;
+            
+            [1, 2, 3, 4].forEach(r => {
+                if (docData[`round${r}`]) {
+                    anyAttended = true;
+                    if (docData[`round${r}`].approved) {
+                        total += docData[`round${r}`].score;
+                    } else {
+                        allApproved = false;
+                    }
+                }
+            });
+
+            const scoreDisplay = document.getElementById('student-score-display');
+            if (anyAttended && allApproved) {
+                scoreDisplay.innerText = `${total}/40`;
+            } else {
+                scoreDisplay.innerText = "Pending";
             }
         };
 
@@ -177,55 +219,102 @@
             if(!ALLOWED_MOBILES.includes(mobile)) {
                 return alert("ഈ മൊബൈൽ നമ്പറിന് പ്രവേശനമില്ല. ദയവായി ലിസ്റ്റിലുള്ള ഫോർമാറ്റിൽ തന്നെ നമ്പർ നൽകുക (ഉദാഹരണം: 91-7034253576).");
             }
+            if (!name || !place) {
+                return alert("പേരും സ്ഥലവും നൽകുക.");
+            }
             
             // save to cache once validated
             localStorage.setItem('tlj_student', JSON.stringify({ name, place, raw_mobile: document.getElementById('mobile').value }));
             
-            const qSnap = await getDocs(query(resultsCol, where("mobile", "==", mobile)));
-            if(!qSnap.empty) {
-                const docData = qSnap.docs[0].data();
-                if (docData.approved) {
-                    document.getElementById('login-screen').classList.add('hidden');
-                    document.getElementById('student-result-screen').classList.remove('hidden');
-                    document.getElementById('student-score-display').innerText = `${docData.score}/10`;
-                    document.getElementById('student-result-name').innerText = docData.name;
-                    document.getElementById('student-result-mobile').innerText = docData.mobile;
-                    document.getElementById('student-result-place').innerText = docData.place;
-                    renderStudentAnswers(docData);
-                    return;
-                } else {
-                    return alert("നിങ്ങൾ ഇതിനകം ക്വിസ് പൂർത്തിയാക്കി കഴിഞ്ഞു. റിസൾട്ട് അഡ്മിൻ അപ്രൂവലിനായി കാത്തിരിക്കുന്നു.");
-                }
-            }
-
-            if (!name || !place) {
-                return alert("പേരും സ്ഥലവും നൽകുക.");
-            }
-
-            // Check if exam is open
+            // Fetch global control status
             try {
                 const controlSnap = await getDoc(controlDocRef);
-                if (controlSnap.exists() && controlSnap.data().isOpen === false) {
-                    return alert("പരീക്ഷ ഇപ്പോൾ ക്ലോസ് ചെയ്തിരിക്കുകയാണ്.");
+                if (controlSnap.exists()) {
+                    globalControlStatus = controlSnap.data();
+                } else {
+                    globalControlStatus = { isOpen: { round1: true, round2: false, round3: false, round4: false, showResults: false }};
                 }
             } catch (e) {
-                console.error("Error checking exam status", e);
+                console.error("Error setting control defaults", e);
+                return alert("Server Error. Please try again.");
             }
 
-            studentData = { name, place, mobile, approved: false };
+            // Fetch student data
+            let dData = null;
+            const qSnap = await getDocs(query(resultsCol, where("mobile", "==", mobile)));
+            if(!qSnap.empty) {
+                dData = qSnap.docs[0].data();
+            }
+
+            // Determine Target Round
+            targetRound = null;
+            let pendingApproval = false;
             
-            // Resume selections if any from previous partially completed session
-            const savedSelections = localStorage.getItem('tlj_finalexam_selections');
-            if (savedSelections) {
-                try {
-                    selections = JSON.parse(savedSelections);
-                } catch (e) {}
+            for (let i = 1; i <= 4; i++) {
+                if (!dData || !dData[`round${i}`]) {
+                    targetRound = `round${i}`;
+                    break;
+                } else if (!dData[`round${i}`].approved) {
+                    pendingApproval = true;
+                    break;
+                }
             }
 
+            if (pendingApproval) {
+                return alert("നിങ്ങൾ ഇതിനകം ക്വിസ് പൂർത്തിയാക്കി കഴിഞ്ഞു. റിസൾട്ട് അഡ്മിൻ അപ്രൂവലിനായി കാത്തിരിക്കുന്നു.");
+            }
+
+            // Check if admin published results OR if they have no eligible target round
+            if (!targetRound && globalControlStatus.isOpen.showResults) {
+                // Completed all 4 rounds and results are published!
+                showStudentResultsScreen(dData);
+                return;
+            } else if (!targetRound) {
+                // Completed all 4 rounds but results not published
+                return alert("നിങ്ങൾ പൂർണ്ണമായും ക്വിസ് പൂർത്തിയാക്കിയിരിക്കുന്നു. ഗ്രാൻഡ് ഫിനാലെ ഫൈനൽ റിസൾട്ടിനായി കാത്തിരിക്കുക.");
+            }
+
+            // Target round exists, check if it's open
+            if (globalControlStatus.isOpen && globalControlStatus.isOpen[targetRound] === true) {
+                // Proceed to round
+                questions = grandQuestions[targetRound];
+                studentData = { name, place, mobile };
+                
+                // Resume selections if any from previous partially completed session
+                const savedSelections = localStorage.getItem('tlj_finalexam_selections');
+                if (savedSelections) {
+                    try {
+                        selections = JSON.parse(savedSelections);
+                    } catch (e) {}
+                }
+
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+                
+                // Update UI to reflect current round
+                document.getElementById('round-header').innerText = `GRAND FINALE - ${targetRound.toUpperCase()}`;
+
+                renderQuestion();
+                startTimer();
+            } else {
+                // It is closed.
+                if (globalControlStatus.isOpen && globalControlStatus.isOpen.showResults && dData) {
+                    // It's closed, but results are published. (e.g., they only did round 1, round 2 is closed, and admin published)
+                    showStudentResultsScreen(dData);
+                    return;
+                } else {
+                    return alert(`${targetRound.toUpperCase()} പരീക്ഷ ഇപ്പോൾ ക്ലോസ് ചെയ്തിരിക്കുകയാണ്. കാത്തിരിക്കുക.`);
+                }
+            }
+        };
+
+        const showStudentResultsScreen = (dData) => {
             document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('quiz-screen').classList.remove('hidden');
-            renderQuestion();
-            startTimer();
+            document.getElementById('student-result-screen').classList.remove('hidden');
+            document.getElementById('student-result-name').innerText = dData.name;
+            document.getElementById('student-result-mobile').innerText = dData.mobile;
+            document.getElementById('student-result-place').innerText = dData.place;
+            renderStudentAnswersSummary(dData);
         };
 
         window.renderQuestion = () => {
@@ -315,9 +404,17 @@
 
         window.submitQuiz = async (autoSubmit = false) => {
             if (timerInterval) clearInterval(timerInterval);
+            if (!targetRound) return; // safeguard
             
             const score = selections.filter((s, i) => s === questions[i].correct).length;
-            await addDoc(resultsCol, { ...studentData, selections, score, at: serverTimestamp() });
+            const roundPayload = { score, selections, approved: false, at: serverTimestamp() };
+            
+            // We use the mobile number as the document ID so we can easily update it across 4 rounds
+            const docRef = doc(db, "artifacts/thelightjuniors/public/data/grand_finale_results", studentData.mobile);
+            const dataToSet = { name: studentData.name, place: studentData.place, mobile: studentData.mobile };
+            dataToSet[targetRound] = roundPayload;
+            
+            await setDoc(docRef, dataToSet, { merge: true });
             
             localStorage.removeItem('tlj_finalexam_start');
             localStorage.removeItem('tlj_finalexam_selections');
@@ -346,15 +443,31 @@
             tbody.innerHTML = '';
             snap.forEach(docSnap => {
                 const d = docSnap.data();
+                const r1 = d.round1;
+                const r2 = d.round2;
+                const r3 = d.round3;
+                const r4 = d.round4;
+                
+                const formatR = (r) => {
+                    if (!r) return '<span class="text-slate-400">NA</span>';
+                    return r.approved 
+                        ? `<span class="text-green-600 font-bold">${r.score}</span>` 
+                        : `<span class="text-amber-500 font-bold">${r.score} (P)</span>`;
+                };
+
+                let hasPending = (r1 && !r1.approved) || (r2 && !r2.approved) || (r3 && !r3.approved) || (r4 && !r4.approved);
+
                 tbody.innerHTML += `
                     <tr class="border-b border-blue-50 text-[11px]">
                         <td class="p-3 font-medium">${d.name}</td>
                         <td class="p-3 text-slate-500 tracking-wider">${d.mobile}</td>
-                        <td class="p-3 font-bold text-blue-600">${d.score}/10</td>
-                        <td class="p-3">${d.approved ? '<span class="text-green-600">Approved</span>' : '<span class="text-amber-500">Pending</span>'}</td>
+                        <td class="p-3">${formatR(r1)}</td>
+                        <td class="p-3">${formatR(r2)}</td>
+                        <td class="p-3">${formatR(r3)}</td>
+                        <td class="p-3">${formatR(r4)}</td>
                         <td class="p-3 flex gap-2">
-                            <button onclick="deleteEntry('${docSnap.id}')" class="text-red-500 hover:underline">Delete</button>
-                            ${!d.approved ? `<button onclick="approveEntry('${docSnap.id}')" class="text-blue-600 font-bold hover:underline">Approve</button>` : ''}
+                            <button onclick="deleteEntry('${docSnap.id}')" class="text-red-500 hover:underline">Del</button>
+                            ${hasPending ? `<button onclick="approveEntry('${docSnap.id}')" class="text-blue-600 font-bold hover:underline">Approve</button>` : ''}
                         </td>
                     </tr>`;
             });
@@ -362,66 +475,116 @@
 
         window.exportExcel = async () => {
             const snap = await getDocs(resultsCol);
-            const data = snap.docs.map(doc => {
-                const d = doc.data();
-                const row = { Name: d.name, Place: d.place, Mobile: d.mobile, Score: d.score, Time: d.at?.toDate().toLocaleString() };
-                questions.forEach((q, i) => row[`Q${i+1}`] = d.selections[i] ? d.selections[i].toUpperCase() : 'N/A');
-                return row;
+            const data = snap.docs.map(docSnap => {
+                const d = docSnap.data();
+                const obj = { Name: d.name, Place: d.place, Mobile: d.mobile };
+                [1,2,3,4].forEach(i => {
+                    if (d[`round${i}`]) {
+                        obj[`R${i}_Score`] = d[`round${i}`].score;
+                        obj[`R${i}_Appr`] = d[`round${i}`].approved;
+                    } else {
+                        obj[`R${i}_Score`] = 'NA';
+                        obj[`R${i}_Appr`] = 'NA';
+                    }
+                });
+                return obj;
             });
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "QuizResults");
-            XLSX.writeFile(wb, "VR26.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "GrandFinaleList");
+            XLSX.writeFile(wb, "GrandFinale.xlsx");
         };
 
         window.approveAll = async () => {
-            if(!confirm("എല്ലാ വിദ്യാർത്ഥികളെയും അപ്രൂവ് ചെയ്യണോ?")) return;
+            if(!confirm("എല്ലാ വിദ്യാർത്ഥികളുടെയും പരീക്ഷകൾ അപ്രൂവ് ചെയ്യണോ?")) return;
             const snap = await getDocs(resultsCol);
             const batch = writeBatch(db);
-            snap.forEach(d => batch.update(d.ref, { approved: true }));
+            snap.forEach(d => {
+                const docData = d.data();
+                let needsUpdate = false;
+                const updatePayload = {};
+                [1,2,3,4].forEach(i => {
+                    const r = `round${i}`;
+                    if (docData[r] && !docData[r].approved) {
+                        updatePayload[`${r}.approved`] = true;
+                        needsUpdate = true;
+                    }
+                });
+                if (needsUpdate) {
+                    batch.update(d.ref, updatePayload);
+                }
+            });
             await batch.commit();
             loadAdminData();
         };
 
-        window.deleteEntry = async (id) => { if(confirm("ഈ എൻട്രി നീക്കം ചെയ്യണോ?")) { await deleteDoc(doc(db, "artifacts/thelightjuniors/public/data/quiz_results", id)); loadAdminData(); } };
-        window.approveEntry = async (id) => { await updateDoc(doc(db, "artifacts/thelightjuniors/public/data/quiz_results", id), { approved: true }); loadAdminData(); };
+        window.deleteEntry = async (id) => { if(confirm("ഈ എൻട്രി നീക്കം ചെയ്യണോ?")) { await deleteDoc(doc(db, "artifacts/thelightjuniors/public/data/grand_finale_results", id)); loadAdminData(); } };
+        
+        window.approveEntry = async (id) => { 
+            const docRef = doc(db, "artifacts/thelightjuniors/public/data/grand_finale_results", id);
+            const dSnap = await getDoc(docRef);
+            if (dSnap.exists()) {
+                const dData = dSnap.data();
+                const updatePayload = {};
+                [1,2,3,4].forEach(i => {
+                    const r = `round${i}`;
+                    if (dData[r] && !dData[r].approved) {
+                        updatePayload[`${r}.approved`] = true;
+                    }
+                });
+                await updateDoc(docRef, updatePayload);
+                loadAdminData(); 
+            }
+        };
 
         window.loadExamStatus = async () => {
-            const btn = document.getElementById('exam-status-btn');
             try {
                 const docSnap = await getDoc(controlDocRef);
-                if (docSnap.exists()) {
-                    const isOpen = docSnap.data().isOpen;
-                    updateExamStatusButton(isOpen);
-                } else {
-                    // default to open
-                    updateExamStatusButton(true);
+                const defaultState = { round1: true, round2: false, round3: false, round4: false, showResults: false };
+                let currentStatus = defaultState;
+                if (docSnap.exists() && docSnap.data().isOpen) {
+                    currentStatus = { ...defaultState, ...docSnap.data().isOpen };
                 }
+                globalControlStatus = { isOpen: currentStatus };
+                
+                ['round1', 'round2', 'round3', 'round4', 'showResults'].forEach(key => {
+                    updateExamStatusButton(key, currentStatus[key]);
+                });
             } catch (e) {
                 console.error(e);
             }
         };
 
-        window.updateExamStatusButton = (isOpen) => {
-            const btn = document.getElementById('exam-status-btn');
+        window.updateExamStatusButton = (key, isOpen) => {
+            const btn = document.getElementById(`exam-status-btn-${key}`);
+            if (!btn) return;
+            
+            let label = key.toUpperCase();
+            if (key === 'showResults') label = "PUBLISH RESULTS";
+            
             if (isOpen) {
-                btn.innerText = "EXAM: OPEN";
-                btn.className = "bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors";
+                btn.innerText = `${label}: ON`;
+                btn.className = "bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors";
                 btn.dataset.status = "open";
             } else {
-                btn.innerText = "EXAM: CLOSED";
-                btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-red-700 transition-colors";
+                btn.innerText = `${label}: OFF`;
+                btn.className = "bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm hover:bg-red-700 transition-colors";
                 btn.dataset.status = "closed";
             }
         };
 
-        window.toggleExamStatus = async () => {
-            const btn = document.getElementById('exam-status-btn');
+        window.toggleExamStatus = async (key) => {
+            const btn = document.getElementById(`exam-status-btn-${key}`);
             const isCurrentlyOpen = btn.dataset.status === "open";
             const newStatus = !isCurrentlyOpen;
-            if (confirm(`പരീക്ഷ ${newStatus ? 'OPEN' : 'CLOSE'} ചെയ്യണോ?`)) {
-                await setDoc(controlDocRef, { isOpen: newStatus }, { merge: true });
-                updateExamStatusButton(newStatus);
+            if (confirm(`${key.toUpperCase()} ${newStatus ? 'OPEN' : 'CLOSE'} ചെയ്യണോ?`)) {
+                
+                // Initialize if doesn't exist
+                await setDoc(controlDocRef, { }, { merge: true });
+                // Merge specific key
+                await setDoc(controlDocRef, { isOpen: { [key]: newStatus } }, { merge: true });
+                
+                updateExamStatusButton(key, newStatus);
             }
         };
 
@@ -457,6 +620,9 @@
             </div>
 
             <div id="quiz-screen" class="hidden">
+                <div class="mb-4 text-center">
+                   <h2 id="round-header" class="text-blue-900 font-extrabold text-xl tracking-tight mb-4">GRAND FINALE</h2>
+                </div>
                 <div class="mb-4 flex justify-between items-center text-center">
                     <span id="q-number" class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider"></span>
                     <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full tracking-wider flex items-center gap-1 shadow-sm">
@@ -491,14 +657,24 @@
             </div>
 
             <div id="admin-screen" class="hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="font-bold text-blue-900">Admin Control</h2>
-                    <div class="flex gap-2">
-                        <button id="exam-status-btn" onclick="toggleExamStatus()" class="bg-gray-400 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm transition-colors" data-status="loading">LOADING...</button>
-                        <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-blue-700 transition-colors">HOME</button>
-                        <button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors">EXCEL REPORT</button>
+                <div class="flex flex-col mb-6 gap-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="font-bold text-blue-900">Admin Control</h2>
+                        <div class="flex gap-2">
+                            <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-blue-700 transition-colors">HOME</button>
+                            <button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors">EXCEL REPORT</button>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl justify-center">
+                        <button id="exam-status-btn-round1" onclick="toggleExamStatus('round1')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R1: L</button>
+                        <button id="exam-status-btn-round2" onclick="toggleExamStatus('round2')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R2: L</button>
+                        <button id="exam-status-btn-round3" onclick="toggleExamStatus('round3')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R3: L</button>
+                        <button id="exam-status-btn-round4" onclick="toggleExamStatus('round4')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R4: L</button>
+                        <div class="w-px bg-blue-200 mx-1"></div>
+                        <button id="exam-status-btn-showResults" onclick="toggleExamStatus('showResults')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">PUB: L</button>
                     </div>
                 </div>
+                <!-- ... rest of admin logic ... -->
                 <button onclick="approveAll()" class="w-full bg-blue-100 text-blue-700 py-3 rounded-xl mb-6 text-xs font-bold hover:bg-blue-200 transition-colors">APPROVE ALL STUDENTS</button>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
@@ -506,9 +682,11 @@
                             <tr class="text-[10px] text-slate-500 border-b border-blue-100 uppercase bg-blue-50/50">
                                 <th class="p-3">Name</th>
                                 <th class="p-3">Mobile</th>
-                                <th class="p-3">Score</th>
-                                <th class="p-3">Status</th>
-                                <th class="p-3">Actions</th>
+                                <th class="p-3">R1</th>
+                                <th class="p-3">R2</th>
+                                <th class="p-3">R3</th>
+                                <th class="p-3">R4</th>
+                                <th class="p-3">Action</th>
                             </tr>
                         </thead>
                         <tbody id="admin-table-body"></tbody>
@@ -523,9 +701,9 @@
             </div>
 
             <div id="student-result-screen" class="hidden text-center py-10">
-                <h2 class="text-2xl font-bold text-blue-800 mb-4">നിങ്ങളുടെ റിസൾട്ട്</h2>
-                <div class="text-6xl font-bold text-blue-600 mb-2" id="student-score-display">0/10</div>
-                <p class="text-slate-600 font-medium mb-6">അഭിനന്ദനങ്ങൾ!</p>
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">GRAND FINALE RESULTS</h2>
+                <div class="text-5xl font-extrabold text-blue-600 mb-2" id="student-score-display">0/40</div>
+                <p class="text-slate-600 font-medium mb-6">Total score across approved rounds</p>
                 
                 <div class="bg-blue-50 p-4 rounded-xl mb-6 text-sm text-left border border-blue-100 shadow-sm w-full">
                     <p class="mb-2"><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">പേര് (Name):</span> <br><span id="student-result-name" class="text-blue-900 font-bold text-base"></span></p>

@@ -33,7 +33,7 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
         const resultsCol = collection(db, "artifacts/thelightjuniors/public/data/quiz_results");
-        const controlDocRef = doc(db, "artifacts/thelightjuniors/public/data", "quiz_control");
+        const controlDocRef = doc(db, "artifacts/thelightjuniors/public/data/settings/quiz_control");
 
         // CLEANED ALLOWED LIST (With dashes for display/matching)
         const ALLOWED_MOBILES = [
