@@ -32,8 +32,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const resultsCol = collection(db, "velichamsaudionline/quiz_results");
-        const controlDocRef = doc(db, "velichamsaudionline/quiz_control/status");
+        const resultsCol = collection(db, "quiz_results");
+        const controlDocRef = doc(db, "quiz_control", "status");
 
         // CLEANED ALLOWED LIST (With dashes for display/matching)
         const ALLOWED_MOBILES = [
@@ -383,8 +383,8 @@
             loadAdminData();
         };
 
-        window.deleteEntry = async (id) => { if(confirm("ഈ എൻട്രി നീക്കം ചെയ്യണോ?")) { await deleteDoc(doc(db, "velichamsaudionline/quiz_results", id)); loadAdminData(); } };
-        window.approveEntry = async (id) => { await updateDoc(doc(db, "velichamsaudionline/quiz_results", id), { approved: true }); loadAdminData(); };
+        window.deleteEntry = async (id) => { if(confirm("ഈ എൻട്രി നീക്കം ചെയ്യണോ?")) { await deleteDoc(doc(db, "quiz_results", id)); loadAdminData(); } };
+        window.approveEntry = async (id) => { await updateDoc(doc(db, "quiz_results", id), { approved: true }); loadAdminData(); };
 
         window.loadExamStatus = async () => {
             const btn = document.getElementById('exam-status-btn');
