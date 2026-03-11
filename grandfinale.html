@@ -36,7 +36,7 @@
         const controlDocRef = doc(db, "grand_finale_control", "status");
 
         // CLEANED ALLOWED LIST (With dashes for display/matching)
-        const ALLOWED_MOBILES = [
+        let ALLOWED_MOBILES = [
             "966-501797382", "966-599122138", "966-557544882", "91-7356160643",
             "966-576737310", "91-8281539208", "91-6235828844", "966-535768609",
             "966-505191459", "44-7624376081", "44-7624489327", "61-0401619365",
@@ -73,7 +73,7 @@
             "966-552640798", "966-552915784", "966-553602809", "966-554021052",
             "966-554078961", "966-555069168", "966-556096654", "966-556475906",
             "966-556857931", "966-558675808", "966-561486272", "966-562129566",
-            "966-562834251", "966-563161829", "966-564843475", "966-564984695",
+            "966-562834251", "966-563161829", "966-564843475", "966-564843475",
             "966-565951942", "966-566780847", "966-567133278", "966-567316632",
             "966-567596578", "966-567830655", "966-567971022", "966-568258888",
             "966-569180023", "966-569534791", "966-570173640", "966-570802341",
@@ -92,10 +92,10 @@
             "966-599934246", "91-9447156453"
         ];
         let studentData = {};
-        let selections = Array(10).fill(null);
+        let selections = [];
         let currentQ = 0;
         let timerInterval = null;
-        let timeLeft = 600; // 10 minutes in seconds
+        let examDurationSeconds = 600; // 10 minutes default
         let targetRound = null; // To track which round the student is currently taking
         let globalControlStatus = {};
 
@@ -112,15 +112,60 @@
             { q: "മുൻസമുദായങ്ങൾക്ക് ബാധിച്ചതു പോലെയുള്ള ഐഹിക ശിക്ഷകളെ നിങ്ങൾ സൂക്ഷിക്കണം, വരാനിരിക്കുന്ന പരലോക ശിക്ഷയെയും നിങ്ങൾ സൂക്ഷിക്കണം, എന്നാൽ നിങ്ങൾ ................", a: "സൂക്ഷ്മതയുള്ളവരായേക്കാം", b: "വിജയികളായേക്കാം", c: "കരുണ ചെയ്യപ്പെട്ടേക്കാം", d: "നേർവഴി കാണിക്കപ്പെട്ടേക്കാം", correct: "c" }
         ];
 
-        // Currently using placeholders for Rounds 2-4. Change these as needed!
-        const grandQuestions = {
+        let grandQuestions = {
             round1: [...baseQuestions],
             round2: [...baseQuestions],
             round3: [...baseQuestions],
             round4: [...baseQuestions]
         };
 
-        let questions = grandQuestions.round1; // Default, overrides later
+        let questions = []; // Default, overrides later
+        
+        let isConfigLoaded = false;
+        window.loadConfigAndQuestions = async () => {
+            if (isConfigLoaded) return;
+            
+            // fetch authorized mobiles
+            try {
+                const mobilesSnap = await getDoc(doc(db, "grand_finale_control", "allowed_mobiles"));
+                if (mobilesSnap.exists() && mobilesSnap.data().mobiles?.length > 0) {
+                    ALLOWED_MOBILES = mobilesSnap.data().mobiles;
+                }
+            } catch (err) {
+                console.error("Error fetching allowed mobiles", err);
+            }
+
+            // fetch questions per round
+            try {
+                const qDocSnap = await getDoc(doc(db, "grand_finale_questions", "default"));
+                if (qDocSnap.exists()) {
+                    const data = qDocSnap.data();
+                    if(data.round1) grandQuestions.round1 = data.round1;
+                    if(data.round2) grandQuestions.round2 = data.round2;
+                    if(data.round3) grandQuestions.round3 = data.round3;
+                    if(data.round4) grandQuestions.round4 = data.round4;
+                }
+            } catch(err) {
+                console.error("Failed to fetch questions", err);
+            }
+
+            // fetch global config
+            try {
+                const controlSnap = await getDoc(controlDocRef);
+                if (controlSnap.exists()) {
+                    globalControlStatus = controlSnap.data();
+                    if (globalControlStatus.durationMinutes) {
+                        examDurationSeconds = parseInt(globalControlStatus.durationMinutes) * 60;
+                    }
+                } else {
+                    globalControlStatus = { isOpen: { round1: true, round2: false, round3: false, round4: false, showResults: false }};
+                }
+            } catch (e) {
+                console.error("Error fetching control defaults", e);
+            }
+            
+            isConfigLoaded = true;
+        };
 
 
         window.renderStudentAnswersSummary = (docData) => {
@@ -163,7 +208,7 @@
                                     Round ${roundNum} 
                                     <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full border border-blue-100 hover:bg-blue-100 transition-colors">View Answers ▾</span>
                                 </span>
-                                <span class="font-bold text-green-600 text-lg">${roundData.score}/10</span>
+                                <span class="font-bold text-green-600 text-lg">${roundData.score}/${roundQs.length}</span>
                             </div>
                             ${detailsHtml}
                         </div>`;
@@ -193,9 +238,17 @@
                 }
             });
 
+            // Calculate exact total possible score based on which questions arrays exist
+            let totalPossible = 0;
+            [1, 2, 3, 4].forEach(r => {
+                if (docData[`round${r}`] && grandQuestions[`round${r}`]) {
+                    totalPossible += grandQuestions[`round${r}`].length;
+                }
+            });
+
             const scoreDisplay = document.getElementById('student-score-display');
             if (anyAttended && allApproved) {
-                scoreDisplay.innerText = `${total}/40`;
+                scoreDisplay.innerText = `${total}/${totalPossible}`;
             } else {
                 scoreDisplay.innerText = "Pending";
             }
@@ -213,7 +266,7 @@
 
             const updateTimer = () => {
                 const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-                timeLeft = Math.max(0, 600 - elapsedSeconds); // 10 minutes = 600 seconds
+                const timeLeft = Math.max(0, examDurationSeconds - elapsedSeconds);
                 
                 const minutes = Math.floor(timeLeft / 60);
                 const seconds = timeLeft % 60;
@@ -254,18 +307,8 @@
             
             try { await signInAnonymously(auth); } catch (e) { console.error("Auth error", e); }
 
-            // Fetch global control status
-            try {
-                const controlSnap = await getDoc(controlDocRef);
-                if (controlSnap.exists()) {
-                    globalControlStatus = controlSnap.data();
-                } else {
-                    globalControlStatus = { isOpen: { round1: true, round2: false, round3: false, round4: false, showResults: false }};
-                }
-            } catch (e) {
-                console.error("Error setting control defaults", e);
-                return alert("നെറ്റ്‌വർക്ക് തകരാർ! ദയവായി വീണ്ടും ശ്രമിക്കുക.");
-            }
+            // Fetch dynamic data before checking database entries
+            await loadConfigAndQuestions();
 
             // Fetch student data
             let dData = null;
@@ -313,11 +356,19 @@
                 questions = grandQuestions[targetRound];
                 studentData = { name, place, mobile };
                 
+                // Initialize selections dynamic size
+                if (selections.length !== questions.length) {
+                    selections = Array(questions.length).fill(null);
+                }
+
                 // Resume selections if any from previous partially completed session
                 const savedSelections = localStorage.getItem('tlj_finalexam_selections');
                 if (savedSelections) {
                     try {
-                        selections = JSON.parse(savedSelections);
+                        const parsed = JSON.parse(savedSelections);
+                        if (parsed.length === questions.length) {
+                             selections = parsed;
+                        }
                     } catch (e) {}
                 }
 
@@ -352,7 +403,7 @@
 
         window.renderQuestion = () => {
             const q = questions[currentQ];
-            document.getElementById('q-number').innerText = `Question ${currentQ + 1} of 10`;
+            document.getElementById('q-number').innerText = `Question ${currentQ + 1} of ${questions.length}`;
             document.getElementById('q-text').innerText = `${currentQ + 1}. ${q.q}`;
             ['a','b','c','d'].forEach(l => {
                 const btn = document.getElementById('opt-'+l);
@@ -363,7 +414,7 @@
             });
             
             document.getElementById('prev-btn').classList.toggle('hidden', currentQ === 0);
-            if(currentQ === 9) {
+            if(currentQ === questions.length - 1) {
                 document.getElementById('next-btn').innerText = "റിവ്യൂവിലേക്ക്";
             } else {
                 document.getElementById('next-btn').innerText = "അടുത്തത്";
@@ -377,7 +428,7 @@
         };
         
         window.goNext = () => {
-            if (currentQ < 9) { currentQ++; renderQuestion(); } 
+            if (currentQ < questions.length - 1) { currentQ++; renderQuestion(); } 
             else { showReview(); }
         };
 
@@ -436,40 +487,66 @@
         };
 
         window.submitQuiz = async (autoSubmit = false) => {
-            if (timerInterval) clearInterval(timerInterval);
-            if (!targetRound) return; // safeguard
-            
-            const score = selections.filter((s, i) => s === questions[i].correct).length;
-            const roundPayload = { score, selections, approved: false, at: serverTimestamp() };
-            
-            // We use the mobile number as the document ID so we can easily update it across 4 rounds
-            const docRef = doc(db, "grand_finale_results", studentData.mobile);
-            const dataToSet = { name: studentData.name, place: studentData.place, mobile: studentData.mobile };
-            dataToSet[targetRound] = roundPayload;
-            
-            await setDoc(docRef, dataToSet, { merge: true });
-            
-            localStorage.removeItem('tlj_finalexam_start');
-            localStorage.removeItem('tlj_finalexam_selections');
+            try {
+                const btn = document.querySelector('button[onclick="submitQuiz()"]');
+                if (btn) btn.innerText = "Submitting...";
+                
+                if (timerInterval) clearInterval(timerInterval);
+                if (!targetRound) return; // safeguard
+                
+                const score = selections.filter((s, i) => questions[i] && s === questions[i].correct).length;
+                const roundPayload = { score, selections, approved: false, at: serverTimestamp() };
+                
+                // We use the mobile number as the document ID so we can easily update it across 4 rounds
+                const docRef = doc(db, "grand_finale_results", studentData.mobile);
+                const dataToSet = { name: studentData.name, place: studentData.place, mobile: studentData.mobile };
+                dataToSet[targetRound] = roundPayload;
+                
+                await setDoc(docRef, dataToSet, { merge: true });
+                
+                localStorage.removeItem('tlj_finalexam_start');
+                localStorage.removeItem('tlj_finalexam_selections');
 
-            if (autoSubmit) {
-                document.getElementById('quiz-screen').classList.add('hidden');
+                if (autoSubmit) {
+                    document.getElementById('quiz-screen').classList.add('hidden');
+                }
+                document.getElementById('review-screen').classList.add('hidden');
+                document.getElementById('finish-screen').classList.remove('hidden');
+            } catch (err) {
+                console.error("Submit Error:", err);
+                alert("സബ്മിറ്റ് ചെയ്യുന്നതിൽ പിശക്! ഇന്റർനെറ്റ് പരിശോധിച്ചു വീണ്ടും ശ്രമിക്കുക. Error: " + err.message);
+                const btn = document.querySelector('button[onclick="submitQuiz()"]');
+                if (btn) btn.innerText = "ഫൈനൽ സബ്മിറ്റ്";
             }
-            document.getElementById('review-screen').classList.add('hidden');
-            document.getElementById('finish-screen').classList.remove('hidden');
         };
-
         // ADMIN LOGIC
         window.checkAdmin = () => {
-            const pw = prompt("Password നൽകുക:");
+            document.getElementById('admin-login-modal').classList.remove('hidden');
+        };
+
+        window.submitAdminPassword = async () => {
+            const pw = document.getElementById('admin-password-input').value;
             if(pw === "admin456") {
+                document.getElementById('admin-login-modal').classList.add('hidden');
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('admin-screen').classList.remove('hidden');
+                // clear password field for security
+                document.getElementById('admin-password-input').value = '';
+                
+                await loadConfigAndQuestions();
                 loadAdminData();
                 loadExamStatus();
+            } else {
+                alert("തെറ്റായ പാസ്‌വേഡ്!");
             }
         };
 
+        window.closeAdminLogin = () => {
+            document.getElementById('admin-login-modal').classList.add('hidden');
+            document.getElementById('admin-password-input').value = '';
+        };
+
+        window.loadAdminData = loadAdminData;
         async function loadAdminData() {
             try { await signInAnonymously(auth); } catch(e) {}
             try {
@@ -627,6 +704,135 @@
             }
         };
 
+        // NEW ADMIN FUNCTIONS: TIMER & EXCEL UPLOADS
+        window.saveDuration = async () => {
+            const input = document.getElementById('admin-duration').value;
+            if(!input || isNaN(input) || input <= 0) return alert("ദയവായി ശരിയായ സമയം നൽകുക (ഉദാ: 10)");
+            
+            try {
+                await setDoc(controlDocRef, { durationMinutes: parseInt(input) }, { merge: true });
+                examDurationSeconds = parseInt(input) * 60;
+                alert(`സമയം ${input} മിനിറ്റായി ക്രമീകരിച്ചു!`);
+            } catch (err) {
+                console.error("Save Duration Error", err);
+                alert("സമയം സേവ് ചെയ്യുന്നതിൽ പിശക്!");
+            }
+        };
+
+        window.downloadTemplate = () => {
+            const templateData = [
+                {
+                    q: "സൂറത്തു യാസീൻ ആരംഭിക്കുന്നത് എന്തൊക്കെ സത്യം ചെയ്തു കൊണ്ടാണ്?",
+                    a: "‘യാസീൻ’ എന്നാൽ അർത്ഥമാക്കുന്നത്...",
+                    b: "നബി (സ) അല്ലാഹുവിൻറെ റസൂലാണ്",
+                    c: "നബി (സ) സ്വീകരിച്ചിട്ടുള്ള മാർഗം...",
+                    d: "അത് (ഖുർആൻ) അല്ലാഹു അവതരിപ്പിച്ചത് തന്നെയാണ്",
+                    correct: "a"
+                }
+            ];
+            const ws = XLSX.utils.json_to_sheet(templateData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "QuestionsTemplate");
+            XLSX.writeFile(wb, "Questions_Template.xlsx");
+        };
+
+        window.uploadQuestions = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const round = document.getElementById('dropdown-round').value;
+            if(!round) return alert("ദയവായി ഒരു റൗണ്ട് തിരഞ്ഞെടുക്കുക!");
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                    const newQuestions = json.map(row => {
+                        let parsedCorrect = String(row.correct || "").toLowerCase().trim();
+                        // ensure it's a valid single letter
+                        if (!['a','b','c','d'].includes(parsedCorrect)) {
+                            parsedCorrect = "a"; // default fallback if bad data
+                        }
+                        
+                        return {
+                            q: String(row.q || "").trim(),
+                            a: String(row.a || "").trim(),
+                            b: String(row.b || "").trim(),
+                            c: String(row.c || "").trim(),
+                            d: String(row.d || "").trim(),
+                            correct: parsedCorrect
+                        };
+                    }).filter(q => q.q && q.a && q.b); // Basic validation: must have question, and at least A and B
+
+                    if (newQuestions.length === 0) {
+                        return alert("Excel ഫയലിൽ സാധുവായ ചോദ്യങ്ങൾ കണ്ടെത്താനായില്ല. ടെംപ്ലേറ്റ് ഉപയോഗിക്കുക.");
+                    }
+
+                    // Save to Firestore under the selected round
+                    await setDoc(doc(db, "grand_finale_questions", "default"), { [round]: newQuestions }, { merge: true });
+                    alert(`✅ ${round.toUpperCase()} -ലേക്ക് ${newQuestions.length} ചോദ്യങ്ങൾ വിജയകരമായി അപ്‌ലോഡ് ചെയ്തു!`);
+                    
+                    // Reload config to update local memory
+                    isConfigLoaded = false;
+                    await loadConfigAndQuestions();
+
+                } catch (err) {
+                    console.error("Upload Error", err);
+                    alert("ചോദ്യങ്ങൾ അപ്‌ലോഡ് ചെയ്യുന്നതിൽ പിശക്. Excel ഫോർമാറ്റ് പരിശോധിക്കുക.");
+                }
+                event.target.value = ''; // Reset file input
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        window.downloadMobilesTemplate = () => {
+            const templateData = [
+                { mobile: "91-7034253576" },
+                { mobile: "966-501797382" }
+            ];
+            const ws = XLSX.utils.json_to_sheet(templateData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "AllowedMobiles");
+            XLSX.writeFile(wb, "AllowedMobiles_Template.xlsx");
+        };
+
+        window.uploadMobiles = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                    const mobilesList = json.map(row => String(row.mobile || "").trim()).filter(m => m !== "");
+
+                    if (mobilesList.length === 0) {
+                        return alert("Excel ഫയലിൽ മൊബൈൽ നമ്പറുകൾ കണ്ടെത്താനായില്ല.");
+                    }
+
+                    await setDoc(doc(db, "grand_finale_control", "allowed_mobiles"), { mobiles: mobilesList });
+                    ALLOWED_MOBILES = mobilesList;
+                    alert(`✅ ${mobilesList.length} നമ്പറുകൾ വിജയകരമായി അപ്‌ലോഡ് ചെയ്തു!`);
+
+                } catch (err) {
+                    console.error("Upload Error", err);
+                    alert("മൊബൈൽ നമ്പറുകൾ അപ്‌ലോഡ് ചെയ്യുന്നതിൽ പിശക്.");
+                }
+                event.target.value = ''; // Reset file input
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
         window.onload = () => {
             const cached = localStorage.getItem('tlj_student');
             if(cached) {
@@ -655,7 +861,17 @@
                 <input type="text" id="place" placeholder="സ്ഥലം (Place)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 <input type="text" id="mobile" placeholder="മൊബൈൽ (eg: 91-7034253576)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 <button onclick="startQuiz()" class="w-full blue-gradient text-white p-5 rounded-2xl font-bold shadow-lg hover:scale-[1.02] active:scale-95 transition-all">പ്രവേശിക്കുക</button>
-                <button onclick="checkAdmin()" class="w-full text-slate-400 text-[10px] mt-6 hover:text-blue-500 uppercase tracking-widest">Admin Access</button>
+                <button onclick="checkAdmin()" class="w-full text-slate-400 text-[10px] mt-6 hover:text-blue-500 uppercase tracking-widest transition-colors">Admin Access</button>
+            </div>
+
+            <!-- Admin Login Modal -->
+            <div id="admin-login-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl relative">
+                    <button onclick="closeAdminLogin()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold">✕</button>
+                    <h2 class="text-xl font-bold text-blue-900 mb-4">Admin Login</h2>
+                    <input type="password" id="admin-password-input" placeholder="Password നൽകുക" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all mb-4">
+                    <button onclick="submitAdminPassword()" class="w-full blue-gradient text-white p-3 rounded-xl font-bold shadow-md hover:scale-[1.02] active:scale-95 transition-all">Submit</button>
+                </div>
             </div>
 
             <div id="quiz-screen" class="hidden">
@@ -698,20 +914,66 @@
             <div id="admin-screen" class="hidden">
                 <div class="flex flex-col mb-6 gap-4">
                     <div class="flex justify-between items-center">
-                        <h2 class="font-bold text-blue-900">Admin Control</h2>
+                        <h2 class="font-bold text-blue-900 flex items-center gap-2">
+                            Admin Control 
+                            <button onclick="loadAdminData()" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-[10px] font-bold shadow-sm hover:bg-blue-200 transition-colors border border-blue-200">REFRESH</button>
+                        </h2>
                         <div class="flex gap-2">
                             <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-blue-700 transition-colors">HOME</button>
                             <button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors">EXCEL REPORT</button>
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl justify-center">
-                        <button id="exam-status-btn-round1" onclick="toggleExamStatus('round1')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R1: L</button>
-                        <button id="exam-status-btn-round2" onclick="toggleExamStatus('round2')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R2: L</button>
-                        <button id="exam-status-btn-round3" onclick="toggleExamStatus('round3')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R3: L</button>
-                        <button id="exam-status-btn-round4" onclick="toggleExamStatus('round4')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">R4: L</button>
-                        <div class="w-px bg-blue-200 mx-1"></div>
-                        <button id="exam-status-btn-showResults" onclick="toggleExamStatus('showResults')" class="bg-gray-400 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm" data-status="loading">PUB: L</button>
+                    
+                    <div class="flex flex-wrap gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl justify-center items-center">
+                        <button id="exam-status-btn-round1" onclick="toggleExamStatus('round1')" class="bg-gray-400 text-white px-2 py-2 rounded text-xs font-bold shadow-sm" data-status="loading">R1: L</button>
+                        <button id="exam-status-btn-round2" onclick="toggleExamStatus('round2')" class="bg-gray-400 text-white px-2 py-2 rounded text-xs font-bold shadow-sm" data-status="loading">R2: L</button>
+                        <button id="exam-status-btn-round3" onclick="toggleExamStatus('round3')" class="bg-gray-400 text-white px-2 py-2 rounded text-xs font-bold shadow-sm" data-status="loading">R3: L</button>
+                        <button id="exam-status-btn-round4" onclick="toggleExamStatus('round4')" class="bg-gray-400 text-white px-2 py-2 rounded text-xs font-bold shadow-sm" data-status="loading">R4: L</button>
+                        <div class="w-px bg-blue-200 mx-2 h-8"></div>
+                        <button id="exam-status-btn-showResults" onclick="toggleExamStatus('showResults')" class="bg-gray-400 text-white px-2 py-2 rounded text-xs font-bold shadow-sm" data-status="loading">PUB: L</button>
+                        
+                        <!-- Exam Duration Input -->
+                        <div class="w-px bg-blue-200 mx-2 h-8"></div>
+                        <div class="flex items-center gap-2 bg-white px-2 py-1 rounded border border-blue-200 shadow-inner">
+                            <input type="number" id="admin-duration" placeholder="Mins" class="w-16 text-xs p-1 outline-none text-center font-bold text-slate-700">
+                            <button onclick="saveDuration()" class="bg-blue-800 text-white px-2 py-1 rounded text-[10px] font-bold hover:bg-blue-900 transition-colors">SAVE TIME</button>
+                        </div>
                     </div>
+                    
+                    <!-- EXCEL UPLOAD PANELS START -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        <!-- Phones Upload Card -->
+                        <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
+                            <h3 class="font-bold text-slate-700 text-sm mb-2">Authorized Mobiles (Excel)</h3>
+                            <div class="flex justify-center gap-2 mb-3">
+                                <button onclick="downloadMobilesTemplate()" class="bg-slate-100 text-slate-600 px-3 py-1 rounded text-[10px] font-bold border border-slate-300 hover:bg-slate-200">⬇ Template</button>
+                            </div>
+                            <input type="file" id="mobile-upload-file" accept=".xlsx, .xls" class="hidden" onchange="uploadMobiles(event)">
+                            <button onclick="document.getElementById('mobile-upload-file').click()" class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-xs font-bold border border-indigo-200 w-full hover:bg-indigo-100 transition-colors">
+                            ⏫ Upload Mobiles Excel
+                            </button>
+                        </div>
+
+                        <!-- Questions Upload Card -->
+                        <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
+                            <h3 class="font-bold text-slate-700 text-sm mb-2">Upload Questions (Excel)</h3>
+                            <div class="flex justify-center gap-2 mb-3">
+                                <button onclick="downloadTemplate()" class="bg-slate-100 text-slate-600 px-3 py-1 rounded text-[10px] font-bold border border-slate-300 hover:bg-slate-200">⬇ Template</button>
+                                <select id="dropdown-round" class="bg-blue-50 text-blue-900 px-3 py-1 rounded text-[10px] font-bold border border-blue-200 outline-none">
+                                    <option value="round1">Round 1</option>
+                                    <option value="round2">Round 2</option>
+                                    <option value="round3">Round 3</option>
+                                    <option value="round4">Round 4</option>
+                                </select>
+                            </div>
+                            <input type="file" id="q-upload-file" accept=".xlsx, .xls" class="hidden" onchange="uploadQuestions(event)">
+                            <button onclick="document.getElementById('q-upload-file').click()" class="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg text-xs font-bold border border-emerald-200 w-full hover:bg-emerald-100 transition-colors">
+                            ⏫ Upload Questions Excel
+                            </button>
+                        </div>
+                    </div>
+                    <!-- EXCEL UPLOAD PANELS END -->
+
                 </div>
                 <!-- ... rest of admin logic ... -->
                 <button onclick="approveAll()" class="w-full bg-blue-100 text-blue-700 py-3 rounded-xl mb-6 text-xs font-bold hover:bg-blue-200 transition-colors">APPROVE ALL STUDENTS</button>
