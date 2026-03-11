@@ -316,7 +316,7 @@
             // Check if admin published results OR if they have no eligible target round
             if (!targetRound && globalControlStatus.isOpen?.showResults) {
                 // Completed all 4 rounds and results are published!
-                showStudentResultsScreen(dData);
+                await showStudentResultsScreen(dData);
                 return;
             } else if (!targetRound) {
                 // Completed all 4 rounds but results not published
@@ -366,7 +366,7 @@
                 // It is closed.
                 if (globalControlStatus.isOpen && globalControlStatus.isOpen.showResults && dData) {
                     // It's closed, but results are published. (e.g., they only did round 1, round 2 is closed, and admin published)
-                    showStudentResultsScreen(dData);
+                    await showStudentResultsScreen(dData);
                     return;
                 } else {
                     return alert(`${targetRound.toUpperCase()} പരീക്ഷ ഇപ്പോൾ ക്ലോസ് ചെയ്തിരിക്കുകയാണ്. കാത്തിരിക്കുക.`);
@@ -374,7 +374,27 @@
             }
         };
 
-        const showStudentResultsScreen = (dData) => {
+        const showStudentResultsScreen = async (dData) => {
+            const startBtn = document.querySelector('button[onclick="startQuiz()"]');
+            const origStartTxt = startBtn ? startBtn.innerText : '';
+            if (startBtn) startBtn.innerText = "റിസൾട്ട് ലോഡ് ചെയ്യുന്നു...";
+
+            for (let i = 1; i <= 4; i++) {
+                const roundKey = `round${i}`;
+                if (dData[roundKey]) {
+                    try {
+                        const qDocSnap = await getDoc(doc(db, "grand_finale_vr26_questions", roundKey));
+                        if (qDocSnap.exists() && qDocSnap.data().questions?.length > 0) {
+                            grandQuestions[roundKey] = qDocSnap.data().questions;
+                        }
+                    } catch(err) {
+                        console.error("Failed fetching questions for results", err);
+                    }
+                }
+            }
+
+            if (startBtn) startBtn.innerText = origStartTxt;
+
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('student-result-screen').classList.remove('hidden');
             document.getElementById('student-result-name').innerText = dData.name;
