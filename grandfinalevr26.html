@@ -36,7 +36,7 @@
         const controlDocRef = doc(db, "grand_finale_vr26_control", "status");
 
         // CLEANED ALLOWED LIST (With dashes for display/matching)
-        const ALLOWED_MOBILES = [
+        let ALLOWED_MOBILES = [
             "966-501797382", "966-599122138", "966-557544882", "91-7356160643",
             "966-576737310", "91-8281539208", "91-6235828844", "966-535768609",
             "966-505191459", "44-7624376081", "44-7624489327", "61-0401619365",
@@ -260,6 +260,18 @@
             const place = document.getElementById('place').value.trim();
             const mobile = document.getElementById('mobile').value.trim();
 
+            try { await signInAnonymously(auth); } catch (e) { console.error("Auth error", e); }
+
+            // Fetch Authorized Mobiles from DB
+            try {
+                const mobilesSnap = await getDoc(doc(db, "grand_finale_vr26_control", "allowed_mobiles"));
+                if (mobilesSnap.exists() && mobilesSnap.data().mobiles?.length > 0) {
+                    ALLOWED_MOBILES = mobilesSnap.data().mobiles;
+                }
+            } catch (err) {
+                console.error("Error fetching allowed mobiles", err);
+            }
+
             if(!ALLOWED_MOBILES.includes(mobile)) {
                 return alert("ഈ മൊബൈൽ നമ്പറിന് പ്രവേശനമില്ല. ദയവായി ലിസ്റ്റിലുള്ള ഫോർമാറ്റിൽ തന്നെ നമ്പർ നൽകുക (ഉദാഹരണം: 91-7034253576).");
             }
@@ -269,8 +281,6 @@
             
             // save to cache once validated
             localStorage.setItem('tlj_student', JSON.stringify({ name, place, raw_mobile: document.getElementById('mobile').value }));
-            
-            try { await signInAnonymously(auth); } catch (e) { console.error("Auth error", e); }
 
             // Fetch global control status
             try {
@@ -816,6 +826,59 @@
             reader.readAsArrayBuffer(file);
         };
 
+        window.downloadMobilesTemplate = () => {
+            const wsData = [
+                ["Mobile Number"],
+                ["966-501797382"],
+                ["91-7034253576"]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Mobiles");
+            XLSX.writeFile(wb, "Authorized_Mobiles_Template.xlsx");
+        };
+
+        window.uploadMobiles = async () => {
+            const fileInput = document.getElementById('mobile-upload');
+            if (!fileInput.files.length) return alert("ദയവായി Excel ഫയൽ തിരഞ്ഞെടുക്കുക.");
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                
+                let newMobiles = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (r[0]) {
+                        newMobiles.push(String(r[0]).trim());
+                    }
+                }
+                
+                if (newMobiles.length === 0) return alert("വാലിഡായ മൊബൈൽ നമ്പറുകൾ കണ്ടെത്താനായില്ല.");
+                if (!confirm(`${newMobiles.length} നമ്പറുകൾ അപ്ഡേറ്റ് ചെയ്യാൻ താങ്കൾക്ക് ഉറപ്പാണോ? (പഴയവ മായ്ക്കപ്പെടും)`)) return;
+
+                const btn = document.getElementById('upload-mobiles-btn');
+                btn.innerText = "Uploading...";
+                
+                try {
+                    await setDoc(doc(db, "grand_finale_vr26_control", "allowed_mobiles"), { mobiles: newMobiles });
+                    alert("മൊബൈൽ നമ്പറുകൾ വിജയകരമായി അപ്ഡേറ്റ് ചെയ്തു!");
+                    fileInput.value = "";
+                } catch (err) {
+                    console.error("Upload Mobiles Error", err);
+                    alert("സേവ് ചെയ്യുന്നതിൽ പിശക്!");
+                } finally {
+                    btn.innerText = "UPLOAD";
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
         window.onload = () => {
             const cached = localStorage.getItem('tlj_student');
             if(cached) {
@@ -910,6 +973,18 @@
                                 <input type="number" id="admin-duration" placeholder="Min" value="10" class="w-16 p-2 border border-slate-200 rounded outline-none focus:ring-2 focus:ring-blue-500 text-sm text-center">
                                 <span class="text-xs font-bold text-slate-600">min</span>
                                 <button onclick="saveDuration()" class="bg-blue-600 text-white px-3 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors ml-auto">SAVE</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Allowed Mobiles Upload -->
+                        <div class="col-span-1 md:col-span-3 bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+                                <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Authorized Mobiles (Excel)</h3>
+                                <button onclick="downloadMobilesTemplate()" class="text-[10px] sm:text-xs text-blue-600 font-bold hover:bg-blue-50 px-2 py-1 rounded transition-colors underline">Download Template</button>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="file" id="mobile-upload" accept=".xlsx, .xls" class="flex-1 w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 p-1.5 border border-slate-200 rounded cursor-pointer">
+                                <button id="upload-mobiles-btn" onclick="uploadMobiles()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors whitespace-nowrap">UPLOAD</button>
                             </div>
                         </div>
                         
