@@ -572,6 +572,7 @@
             }
         };
 
+        window.loadAdminData = loadAdminData;
         async function loadAdminData() {
             try { await signInAnonymously(auth); } catch(e) {}
             try {
