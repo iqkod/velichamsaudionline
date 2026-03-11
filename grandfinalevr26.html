@@ -178,7 +178,7 @@
                                     Round ${roundNum} 
                                     <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full border border-blue-100 hover:bg-blue-100 transition-colors">View Answers ▾</span>
                                 </span>
-                                <span class="font-bold text-green-600 text-lg">${roundData.score}/10</span>
+                                <span class="font-bold text-green-600 text-lg">${roundData.score}/${roundQs ? roundQs.length : 10}</span>
                             </div>
                             ${detailsHtml}
                         </div>`;
@@ -194,6 +194,7 @@
             
             // Calculate total score if all attended are approved
             let total = 0;
+            let maxTotal = 0;
             let allApproved = true;
             let anyAttended = false;
             
@@ -202,6 +203,7 @@
                     anyAttended = true;
                     if (docData[`round${r}`].approved) {
                         total += docData[`round${r}`].score;
+                        maxTotal += grandQuestions[`round${r}`] ? grandQuestions[`round${r}`].length : 10;
                     } else {
                         allApproved = false;
                     }
@@ -210,7 +212,7 @@
 
             const scoreDisplay = document.getElementById('student-score-display');
             if (anyAttended && allApproved) {
-                scoreDisplay.innerText = `${total}/40`;
+                scoreDisplay.innerText = `${total}/${maxTotal}`;
             } else {
                 scoreDisplay.innerText = "Pending";
             }
