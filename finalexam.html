@@ -1,24 +1,18 @@
 <!DOCTYPE html>
-<html lang="ml">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>വെളിച്ചം റമദാൻ 2026(VR2026) - Quiz</title>
+    <title>വെളിച്ചം റമദാൻ 2026 (VR2026) - Final Exam</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS for Excel Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap');
-        body { font-family: 'Manjari', sans-serif; background-color: #f0f9ff; }
-        .glass { background: rgba(255, 255, 255, 1); border: 1px solid #e0e7ff; }
-        .blue-gradient { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
-        .timer-warning { color: #dc2626; animation: blink 1s linear infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-    </style>
-
+    
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, where, updateDoc, writeBatch, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, orderBy, updateDoc, writeBatch, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBPHM4eHRhRPyA-JFDXMrbuFIeMvnGByts",
@@ -32,570 +26,541 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const resultsCol = collection(db, "quiz_results");
-        const controlDocRef = doc(db, "quiz_control", "status");
+        const appId = "vso_finalexam";
+        const ADMIN_SECRET = "LSO2026@siicNC"; // Shared secret for rules
 
-        // CLEANED ALLOWED LIST (With dashes for display/matching)
-        let ALLOWED_MOBILES = [
-            "966-501797382", "966-599122138", "966-557544882", "91-7356160643",
-            "966-576737310", "91-8281539208", "91-6235828844", "966-535768609",
-            "966-505191459", "44-7624376081", "44-7624489327", "61-0401619365",
-            "91-6235928844", "91-6238041679", "91-7025511457", "91-7025785391",
-            "91-7034139883", "91-7034253576", "91-7034399820", "91-7306540074",
-            "91-7558871351", "91-7560956711", "91-7594803054", "91-7902448701",
-            "91-7902470316", "91-7907034843", "91-8129686991", "91-8129764186",
-            "91-8157860261", "91-8304063560", "91-8714267974", "91-8714801835",
-            "91-8848193358", "91-9037267974", "91-9207658678", "91-9496699612",
-            "91-9539360509", "91-9567256340", "91-9629988903", "91-9633035008",
-            "91-9645328773", "91-9645395415", "91-9656912678", "91-9744205385",
-            "91-9745616062", "91-9817111151", "91-9843918413", "91-9847193435",
-            "91-9847302529", "91-9895991116", "91-9900953430", "91-9946050257",
-            "91-9947709622", "965-50905731", "966-500677517", "966-500967745",
-            "966-501154403", "966-501250188", "966-501527780", "966-501534407",
-            "966-502163791", "966-503262990", "966-503679542", "966-503766632",
-            "966-504165135", "966-504186982", "966-504383232", "966-504435135",
-            "966-505332710", "966-505765817", "966-505797935", "966-506729657",
-            "966-506830680", "966-506942737", "966-507177103", "966-508032152",
-            "966-508194715", "966-508222053", "966-508386571", "966-508742148",
-            "966-508815960", "966-508854732", "966-509229487", "966-509262992",
-            "966-509292062", "966-509402136", "966-510360426", "966-530141819",
-            "966-530960342", "966-531894076", "966-532063993", "966-532679687",
-            "966-532796405", "966-532963089", "966-533594582", "966-533689757",
-            "966-534314336", "966-536273182", "966-536296334", "966-536474235",
-            "966-537637215", "966-538531297", "966-539101716", "966-539302907",
-            "966-539867101", "966-540247380", "966-541247266", "966-541632275",
-            "966-541851574", "966-541885929", "966-542099671", "966-543718439",
-            "966-543779651", "966-543820213", "966-545094153", "966-545136406",
-            "966-545442493", "966-545900025", "966-546549197", "966-546678286",
-            "966-546940420", "966-546991610", "966-548420429", "966-549840171",
-            "966-550619441", "966-550989676", "966-551508035", "966-551582755",
-            "966-551758148", "966-551876182", "966-552455305", "966-552465305",
-            "966-552640798", "966-552915784", "966-553602809", "966-554021052",
-            "966-554078961", "966-555069168", "966-556096654", "966-556475906",
-            "966-556857931", "966-558675808", "966-561486272", "966-562129566",
-            "966-562834251", "966-563161829", "966-564843475", "966-564984695",
-            "966-565951942", "966-566780847", "966-567133278", "966-567316632",
-            "966-567596578", "966-567830655", "966-567971022", "966-568258888",
-            "966-569180023", "966-569534791", "966-570173640", "966-570802341",
-            "966-570828420", "966-571918309", "966-572099478", "966-572957971",
-            "966-574359871", "966-574980699", "966-576050581", "966-580591263",
-            "966-581965286", "966-591277136", "966-592598969", "966-595088137",
-            "966-595171618", "966-599215214", "971-524832451", "971-555245457",
-            "971-557424082", "971-561432359", "971-563963407", "971-586655864",
-            "971-588822419", "91-9964946252", "965-99794592", "966-530992783",
-            "966-531458085", "966-534495300", "966-535460233", "966-553382689",
-            "966-554415618", "966-556752858", "966-566443377", "966-571053310",
-            "966-597053063", "91-9633987889", "966-506613574", "966-535821533",
-            "966-548421962", "966-565460233", "966-571472518", "91-7337505186",
-            "966-538451880", "966-562133065", "966-508451880", "966-538024360",
-            "966-531954480", "966-539004619", "966-549295586", "966-564546985",
-            "966-599934246", "91-9447156453"
-        ];
-        let studentData = {};
-        let selections = [];
-        let currentQ = 0;
+        // State Management
+        let user = null;
+        let studentData = { name: '', place: '', mobile: '' };
+        let studentSelections = [];
+        let currentQuestion = 0;
+        let hasReachedReview = false;
+        let timeLeft = 600; 
+        let dbDuration = 600;
         let timerInterval = null;
-        let examDurationSeconds = 600; // default 10 mins
+        let isSubmitted = false;
+        let allResultsData = []; 
 
-        let questions = [
-            { q: "................ എന്നും, ................ എന്നും, ................ എന്നും ഖുർആൻ മുഖേന സത്യം ചെയ്തു കൊണ്ടാണ് അല്ലാഹു സൂറത്തു യാസീൻ ആരംഭിക്കുന്നത്. താഴെ നൽകിയവയിൽ വിട്ടഭാഗങ്ങളോട് യോജിക്കാത്തത് ഏത് ?", a: "‘യാസീൻ’ എന്നാൽ അർത്ഥമാക്കുന്നത് ‘ഹേ, മനുഷ്യാ’ എന്നാണ്", b: "നബി (സ) അല്ലാഹുവിൻറെ റസൂലാണ്", c: "നബി (സ) സ്വീകരിച്ചിട്ടുള്ള മാർഗം യാതൊരു വക്രതയുമില്ലാത്ത നേരായ മാർഗമാണ്", d: "അത് (ഖുർആൻ) അല്ലാഹു അവതരിപ്പിച്ചത് തന്നെയാണ്", correct: "a" },
-            { q: "..................... എന്നു പറഞ്ഞതിൻറെ ഉദ്ദേശം, മേലിൽ ഹൃദയപരിവർത്തനം വന്ന് നന്നായിത്തീരുവാൻ മാർഗമില്ലാത്തവിധം അവരുടെ ഹൃദയങ്ങൾ ദൂഷിച്ചുപോയിട്ടുണ്ടെന്നും, അതിനാൽ ശിക്ഷയെ സംബന്ധിച്ച താക്കീതു അവരിൽ ബാധകമായിക്കഴിഞ്ഞിട്ടുണ്ടെന്നും ആകുന്നു.", a: "എനി അവർ വിശ്വസിക്കുകയില്ല (فَهُمْ لَا يُؤْمِنُونَ)", b: "വാക്കു സ്ഥിരപ്പെട്ടു (حَقَّ الْقَوْلُ)", c: "അതിനാൽ അവർ അശ്രദ്ധരാണ് (فَهُمْ غَافِلُونَ)", d: "അവരിൽ സമമാണ് (سَوَاءٌ عَلَيْهِمْ)", correct: "b" },
-            { q: "ആ മുശ്‌രിക്കുകളെ താക്കീതു ചെയ്താലും ഇല്ലെങ്കിലും കാര്യമില്ല, അവർ വിശ്വസിക്കില്ല. കാരണം അവരുടെ ഹൃദയം അത്രത്തോളം കഠിനമായിരിക്കുന്നു. ഇത് വ്യക്തമാക്കാൻ അല്ലാഹു പറയുന്ന ഉപമകളിൽ നിന്നും ചില പ്രയോഗങ്ങളെ താഴെ നൽകുന്നു, അവയിൽ പെടാത്തത് ഏത്?", a: "കഴുത്തുകളിൽ താടിയെല്ലുകൾ വരെയുള്ള ആമങ്ങൾ ഏർപ്പെടുത്തി", b: "അതിനാൽ അവർ തലപൊക്കപ്പെട്ടവരാകുന്നു", c: "മുമ്പിൽ ഒരു തടവും പിമ്പിൽ ഒരു തടവും നൽകി അവരെ മൂടിയിരിക്കുന്നു", d: "അതിനാൽ അവർ അനുസരണയുള്ളവരാണ്", correct: "d" },
-            { q: "ഒരാളൊരു നല്ല നടപടി ക്രമം നടപ്പിലാക്കിയാൽ അയാൾക്ക് ലഭിക്കുന്ന പ്രതിഫലമായി ബന്ധപ്പെട്ട് ശരിയായത് ..........", a: "അവന്നു അതിൻറെ പ്രതിഫലമുണ്ട്", b: "അവന്നു ശേഷം അതനുസരിച്ച് പ്രവർത്തിക്കുന്നവരുടെ പ്രതിഫലവുമുണ്ട്", c: "അവരുടെ പ്രതിഫലങ്ങളിൽ ഒട്ടും കുറവ് വരാതെതന്നെ അവന്നു പ്രതിഫലം ഉണ്ടായിരിക്കും", d: "എല്ലാം ശരിയാണ്", correct: "d" },
-            { q: "ദൂതന്മാരെ കള്ളവാക്കിയ ജനതയുടെ ഒരു പ്രസ്താവനയാണ്; \"...................... ൽ നിന്ന് നിങ്ങൾക്ക് തീർച്ചയായും വേദനയേറിയ ശിക്ഷ ബാധിക്കുന്നതാണ്\". ഇവിടെ വിട്ടഭാഗത്ത് ഉദ്ദേശിച്ചത് ആരെയാണ്?", a: "അല്ലാഹുവിൽ നിന്ന്", b: "ആ ജനതയിൽ നിന്ന്", c: "ഫിർഔനിൽ നിന്ന്", d: "സ്വാലിഹു (അ) നബിയുടെ ജനതയിൽ നിന്ന്", correct: "b" },
-            { q: "പട്ടണത്തിൻറെ അങ്ങേ അറ്റത്തു നിന്ന് ഓടി വന്ന മനുഷ്യൻ ആ ജനതയോട് ഉപദേശിച്ച ചില വാക്യങ്ങളെ നൽകുന്നു. ഒന്ന് അവയിൽ പെടുന്നില്ല, ഏത്?", a: "അവന്നു പുറമെ വല്ല ദൈവങ്ങളെയും ഞാൻ സ്വീകരിക്കുകയോ?", b: "എൻറെ ജനങ്ങൾ അറിഞ്ഞിരുന്നുവെങ്കിൽ നന്നായേനെ", c: "എന്നെ സൃഷ്ടിച്ചുണ്ടാക്കിയവനെ ഞാൻ ആരാധന ചെയ്യാതിരിക്കുവാൻ എനിക്ക് എന്താണ് തടസ്സം", d: "നിശ്ചയമായും ഞാൻ നിങ്ങളുടെ രക്ഷിതാവിൽ വിശ്വസിച്ചിരിക്കുന്നു", correct: "b" },
-            { q: "ആ ജനതയെ അല്ലാഹു വമ്പിച്ച ശിക്ഷ മൂലം നശിപ്പിക്കാനുള്ള കാരണം എന്തായിരുന്നു?", a: "അവരിലേക്ക് വന്ന ദൂതന്മാരെ കല്ലെറിഞ്ഞു കൊല്ലുമെന്ന് ഭീഷണിപ്പെടുത്തി", b: "ആദ്യ രണ്ടു ദൂതന്മാരെ അവർ ആദ്യമേ കൊന്നു കളഞ്ഞു", c: "പട്ടണത്തിലെ അങ്ങേ അറ്റത്തിൽ നിന്നും ഓടി വന്ന മൂന്നാമത്തെ ദൂതനെ ആക്രമിച്ചു", d: "അവരിലേക്ക് വന്ന ദൂതന്മാരെ ധിക്കരിക്കുകയും ഉപദേഷ്ടാവിനെ ആക്രമിക്കുകയും ചെയ്തു", correct: "d" },
-            { q: "\"എല്ലാ ഇണവർഗ്ഗങ്ങളെയും സൃഷ്ടിച്ചിട്ടുള്ളവൻ മഹാ പരിശുദ്ധനത്രെ\"; വചനത്തിൽ വന്നിട്ടില്ലാത്തത് ഏത്?", a: "ഭൂമി ഉൽപാദിപ്പിക്കുന്നതിൽ നിന്ന്", b: "അവരുടെ ദേഹങ്ങളിൽ നിന്ന്", c: "അവർക്ക് അറിയുന്നവയിൽനിന്ന്", d: "അവർക്ക് അറിഞ്ഞുകൂടാത്തവയിൽ നിന്ന്", correct: "c" },
-            { q: "സൂര്യനും ചന്ദ്രനും ಭೂമിയും രാവും പകലും എല്ലാം ബുദ്ധി വർഗ്ഗത്തെപ്പോലെ അത്തതിൻറെ ചലനങ്ങൾ നിർവഹിച്ചു കൊണ്ടിരിക്കുന്നു എന്ന് സൂചന നൽകുന്ന വചന ഭാഗം ഏത് ?", a: "وَالشَّمْسُ تَجْرِي لِمُسْتَقَرٍّ لَّهَا സൂര്യൻ അതിൻറെ ഒരു താവളത്തിലേക്കു ചലിച്ചു കൊണ്ടിരിക്കുന്നു", b: "لَا الشَّمْسُ يَنبَغِي لَهَا أَن تُدْرِكَ الْقَمَرَ സൂര്യനാകട്ടെ അതിന് ചന്ദ്രനെ പ്രാപിക്കുവാൻ പറ്റുകയില്ല", c: "وَلَا اللَّيْلُ سَابِقُ النَّهَارِ രാത്രി പകലിനെ മുൻകടക്കുന്നതുമല്ല", d: "وَكُلٌّ فِي فَلَكٍ يَسْبَحُونَ എല്ലാം ഓരോ സഞ്ചാര മണ്ഡലത്തിൽ നീന്തി കൊണ്ടിരിക്കുന്നു.", correct: "d" },
-            { q: "മുൻസമുദായങ്ങൾക്ക് ബാധിച്ചതു പോലെയുള്ള ഐഹിക ശിക്ഷകളെ നിങ്ങൾ സൂക്ഷിക്കണം, വരാനിരിക്കുന്ന പരലോക ശിക്ഷയെയും നിങ്ങൾ സൂക്ഷിക്കണം, എന്നാൽ നിങ്ങൾ ................", a: "സൂക്ഷ്മതയുള്ളവരായേക്കാം", b: "വിജയികളായേക്കാം", c: "കരുണ ചെയ്യപ്പെട്ടേക്കാം", d: "നേർവഴി കാണിക്കപ്പെട്ടേക്കാം", correct: "c" }
-        ];
-
-        let isConfigLoaded = false;
-        window.loadConfigAndQuestions = async () => {
-            if (isConfigLoaded) return;
-            try {
-                const qDocSnap = await getDoc(doc(db, "quiz_questions", "default"));
-                if (qDocSnap.exists() && qDocSnap.data().questions?.length > 0) {
-                    questions = qDocSnap.data().questions;
+        // AUTHENTICATION
+        onAuthStateChanged(auth, (u) => { user = u; });
+        const initAuth = async () => { 
+            try { 
+                await signInAnonymously(auth); 
+                const configSnapSettings = await getDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "settings"));
+                if (configSnapSettings.exists() && configSnapSettings.data().durationMinutes) {
+                    dbDuration = configSnapSettings.data().durationMinutes * 60;
+                    timeLeft = dbDuration;
+                    const min = Math.floor(timeLeft / 60);
+                    const sec = timeLeft % 60;
+                    document.getElementById('timer-display').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
                 }
-            } catch(err) {
-                console.error("Failed to fetch questions", err);
-            }
+            } catch (e) { 
+                console.error("Auth failed", e); 
+            } 
+        };
+        initAuth();
 
-            try {
-                const controlSnap = await getDoc(controlDocRef);
-                if (controlSnap.exists() && controlSnap.data().durationMinutes) {
-                    examDurationSeconds = parseInt(controlSnap.data().durationMinutes) * 60;
-                }
-            } catch (e) {
-                console.error("Error fetching config", e);
-            }
-            if (selections.length !== questions.length) {
-                selections = Array(questions.length).fill(null);
-            }
-            isConfigLoaded = true;
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedName = localStorage.getItem('tlj_name');
+            const savedPlace = localStorage.getItem('tlj_place');
+            const savedMobile = localStorage.getItem('tlj_mobile');
+            const savedDob = localStorage.getItem('tlj_dob');
+            if(savedName) document.getElementById('name').value = savedName;
+            if(savedPlace) document.getElementById('place').value = savedPlace;
+            if(savedMobile) document.getElementById('mobile').value = savedMobile;
+            if(savedDob) document.getElementById('dob').value = savedDob;
+        });
+
+        let questions = [];
+
+        const allowedMobiles = [];
+
+        const showScreen = (id) => {
+            ['login-screen', 'quiz-screen', 'review-screen', 'finish-screen', 'admin-panel', 'student-result-screen', 'admin-editor-screen'].forEach(s => {
+                document.getElementById(s)?.classList.add('hidden');
+            });
+            document.getElementById(id)?.classList.remove('hidden');
+            window.scrollTo(0,0);
         };
 
-        window.renderStudentAnswers = (docData) => {
-            const container = document.getElementById('student-answers-list');
-            if(container) {
-                container.innerHTML = questions.map((q, i) => {
-                    const selected = docData.selections[i];
-                    const isCorrect = selected === q.correct;
-                    const optLetter = selected ? selected.toUpperCase() : 'N/A';
-                    const optText = selected && q[selected] ? q[selected] : 'ഉത്തരം നൽകിയിട്ടില്ല';
-                    
-                    return `
-                    <div class="p-4 bg-white rounded-lg mb-3 border ${isCorrect ? 'border-green-200' : 'border-red-200'} shadow-sm text-left">
-                        <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
-                        <p class="text-xs mt-2 ${isCorrect ? 'text-green-700' : 'text-red-700'} font-semibold">
-                            നിങ്ങളുടെ ഉത്തരം: ${optLetter}. ${optText}
-                            ${isCorrect ? ' <span class="text-green-500 ml-1">✓</span>' : ' <span class="text-red-500 ml-1">✗</span>'}
-                        </p>
-                        ${!isCorrect ? `<p class="text-xs mt-1 text-green-700 font-semibold">ശരിയായ ഉത്തരം: ${q.correct.toUpperCase()}. ${q[q.correct]}</p>` : ''}
-                    </div>
-                    `;
-                }).join('');
-            }
-        };
-
-        window.startTimer = () => {
-            const timerDisplay = document.getElementById('timer-display');
-            let startTime = localStorage.getItem('tlj_finalexam_start');
-            if (!startTime) {
-                startTime = Date.now();
-                localStorage.setItem('tlj_finalexam_start', startTime);
-            } else {
-                startTime = parseInt(startTime, 10);
-            }
-
-            const updateTimer = () => {
-                const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-                const timeLeft = Math.max(0, examDurationSeconds - elapsedSeconds); 
-                
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
-                
-                timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                
-                if (timeLeft <= 60) {
-                    timerDisplay.classList.add('timer-warning');
-                    timerDisplay.parentElement.classList.replace('bg-blue-100', 'bg-red-100');
-                    timerDisplay.parentElement.classList.replace('text-blue-800', 'text-red-800');
-                }
-                
+        const startTimer = () => {
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    alert("സമയം കഴിഞ്ഞു! നിങ്ങളുടെ ഉത്തരങ്ങൾ ഓട്ടോമാറ്റിക്കായി സബ്മിറ്റ് ചെയ്യപ്പെടുന്നു.");
-                    submitQuiz(true); // force submit
+                    autoSubmit();
+                    return;
                 }
-            };
+                timeLeft--;
+                localStorage.setItem(`tlj_timer_${studentData.mobile}`, timeLeft.toString());
+                updateTimerUI();
+            }, 1000);
+        };
 
-            updateTimer(); // Call immediately
-            timerInterval = setInterval(updateTimer, 1000);
+        const updateTimerUI = () => {
+            const min = Math.floor(timeLeft / 60);
+            const sec = timeLeft % 60;
+            document.getElementById('timer-display').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        };
+
+        const autoSubmit = async () => {
+            if (isSubmitted) return;
+            alert("Time is up! Your quiz will be submitted automatically.");
+            await window.submitResult();
+        };
+
+        const getExistingSubmission = async (mobile) => {
+            const resultsRef = collection(db, "artifacts", appId, "public", "data", "quizLSO_results");
+            const q = query(resultsRef); 
+            const querySnapshot = await getDocs(q);
+            let submission = null;
+            querySnapshot.forEach((doc) => { if(doc.data().mobile === mobile) submission = { id: doc.id, ...doc.data() }; });
+            return submission;
+        };
+
+        
+
+        window.verifyMobile = async () => {
+            const mobileInput = document.getElementById('mobile');
+            const mobile = mobileInput.value.trim();
+            if (!mobile) return alert("Please enter your mobile number");
+
+            const btn = document.getElementById('login-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "Verifying...";
+            btn.disabled = true;
+
+            try {
+                // Ensure anonymous login BEFORE doing any Firebase reads to avoid Permission Denied errors
+                const auth = getAuth();
+                await signInAnonymously(auth);
+
+                const configSnapSettings = await getDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "settings"));
+                let allowAny = false;
+                if (configSnapSettings.exists() && configSnapSettings.data().allowAnyMobile) {
+                    allowAny = true;
+                }
+                
+                if (configSnapSettings.exists() && configSnapSettings.data().durationMinutes) {
+                    dbDuration = configSnapSettings.data().durationMinutes * 60;
+                }
+
+                if (configSnapSettings.exists() && configSnapSettings.data().examStatus !== "open") {
+                    // Check if they already submitted, maybe they just want to see results
+                    const existing = await getExistingSubmission(mobile);
+                    if (existing && existing.approved) {
+                        // let them through to see results
+                    } else if (existing && !existing.approved) {
+                        alert("You have already submitted. Please wait for admin approval to view your results.");
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                        return;
+                    } else {
+                        alert("The exam is currently closed.");
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                        return;
+                    }
+                }
+
+                let isAuthorized = false;
+                let autoName = "";
+                let autoPlace = "";
+                let autoDob = "";
+
+                const configSnapAuth = await getDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "authorized_mobiles"));
+                if (configSnapAuth.exists()) {
+                    const authData = configSnapAuth.data();
+                    
+                    // Check logic for new format (details object)
+                    if (authData.details && authData.details[mobile]) {
+                        isAuthorized = true;
+                        autoName = authData.details[mobile].name || "";
+                        autoPlace = authData.details[mobile].place || "";
+                    } 
+                    // Fallback to old format just in case
+                    else if (authData.mobiles && authData.mobiles.includes(mobile)) {
+                        isAuthorized = true;
+                    }
+                } else if (allowedMobiles.includes(mobile)) {
+                    isAuthorized = true; // Fallback hardcoded
+                }
+                
+                if (allowAny) {
+                    const mobileRegex = /^\d{1,4}-\d{5,15}$/;
+                    if (!mobileRegex.test(mobile)) {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                        return alert("Please enter mobile number in format: CountryCode-MobileNumber (e.g. 966-501234567)");
+                    }
+                } else {
+                    if (!isAuthorized) {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                        return alert("Mobile number not authorized. Please contact the administrator.");
+                    }
+                }
+                
+                // If we get here, they are allowed to proceed
+                mobileInput.readOnly = true;
+                mobileInput.classList.add("bg-emerald-50", "border-emerald-200", "text-emerald-800");
+                
+                const detailsSection = document.getElementById("details-section");
+                detailsSection.classList.remove("hidden");
+                
+                const nameInput = document.getElementById('name');
+                const placeInput = document.getElementById('place');
+                const dobInput = document.getElementById('dob');
+                
+                if (autoName) { nameInput.value = autoName; nameInput.readOnly = true; nameInput.classList.add("bg-slate-200"); }
+                if (autoPlace) { placeInput.value = autoPlace; placeInput.readOnly = true; placeInput.classList.add("bg-slate-200"); }
+                
+                btn.innerText = "START QUIZ";
+                btn.disabled = false;
+                btn.onclick = startQuiz;
+                
+            } catch(e) {
+                console.error("Auth check failed", e);
+                btn.innerText = originalText;
+                btn.disabled = false;
+                return alert("Network error verifying mobile. Please try again.");
+            }
         };
 
         window.startQuiz = async () => {
             const name = document.getElementById('name').value.trim();
             const place = document.getElementById('place').value.trim();
             const mobile = document.getElementById('mobile').value.trim();
-
-            try { await signInAnonymously(auth); } catch (e) { console.error("Auth error", e); }
-
-            // Fetch Authorized Mobiles from DB
-            try {
-                const mobilesSnap = await getDoc(doc(db, "quiz_control", "allowed_mobiles"));
-                if (mobilesSnap.exists() && mobilesSnap.data().mobiles?.length > 0) {
-                    ALLOWED_MOBILES = mobilesSnap.data().mobiles;
-                }
-            } catch (err) {
-                console.error("Error fetching allowed mobiles", err);
-            }
-
-            if(!ALLOWED_MOBILES.includes(mobile)) {
-                return alert("ഈ മൊബൈൽ നമ്പറിന് പ്രവേശനമില്ല. ദയവായി ലിസ്റ്റിലുള്ള ഫോർമാറ്റിൽ തന്നെ നമ്പർ നൽകുക (ഉദാഹരണം: 91-7034253576).");
-            }
+            const dob = document.getElementById('dob').value;
             
-            // save to cache once validated
-            localStorage.setItem('tlj_student', JSON.stringify({ name, place, raw_mobile: document.getElementById('mobile').value }));
+            if(!name || !place || !mobile || !dob) return alert("Please fill all fields, including Date of Birth.");
 
-            // Load remote questions and duraton FIRST so results use the correct array length
-            await loadConfigAndQuestions();
+            const submitBtn = document.getElementById('login-btn');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Loading...";
+            submitBtn.disabled = true;
 
-            let qSnap;
             try {
-                qSnap = await getDocs(query(resultsCol, where("mobile", "==", mobile)));
-            } catch (err) {
-                console.error("DB error fetching previously saved:", err);
-                return alert("നെറ്റ്‌വർക്ക് പ്രശ്‌നം കാരണം പ്രവേശിക്കാൻ സാധിച്ചില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.");
-            }
-
-            if(!qSnap.empty) {
-                const docData = qSnap.docs[0].data();
-                if (docData.approved) {
-                    document.getElementById('login-screen').classList.add('hidden');
-                    document.getElementById('student-result-screen').classList.remove('hidden');
-                    document.getElementById('student-score-display').innerText = `${docData.score}/${questions.length}`;
-                    document.getElementById('student-result-name').innerText = docData.name;
-                    document.getElementById('student-result-mobile').innerText = docData.mobile;
-                    document.getElementById('student-result-place').innerText = docData.place;
-                    renderStudentAnswers(docData);
-                    return;
-                } else {
-                    return alert("നിങ്ങൾ ഇതിനകം ക്വിസ് പൂർത്തിയാക്കി കഴിഞ്ഞു. റിസൾട്ട് അഡ്മിൻ അപ്രൂവലിനായി കാത്തിരിക്കുന്നു.");
-                }
-            }
-
-            if (!name || !place) {
-                return alert("പേരും സ്ഥലവും നൽകുക.");
-            }
-
-            // Check if exam is open
-            try {
-                const controlSnap = await getDoc(controlDocRef);
-                if (controlSnap.exists() && controlSnap.data().isOpen === false) {
-                    return alert("പരീക്ഷ ഇപ്പോൾ ക്ലോസ് ചെയ്തിരിക്കുകയാണ്.");
-                }
-            } catch (e) {
-                console.error("Error checking exam status", e);
-            }
-
-            studentData = { name, place, mobile, approved: false };
-            
-            // Resume selections if any from previous partially completed session
-            const savedSelections = localStorage.getItem('tlj_finalexam_selections');
-            if (savedSelections) {
+                // Fetch the live questions before checking existing submissions so the results screen renders correctly
                 try {
-                    selections = JSON.parse(savedSelections);
-                } catch (e) {}
-            }
-
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('quiz-screen').classList.remove('hidden');
-            renderQuestion();
-            startTimer();
-        };
-
-        window.renderQuestion = () => {
-            const q = questions[currentQ];
-            document.getElementById('q-number').innerText = `Question ${currentQ + 1} of ${questions.length}`;
-            document.getElementById('q-text').innerText = `${currentQ + 1}. ${q.q}`;
-            ['a','b','c','d'].forEach(l => {
-                const btn = document.getElementById('opt-'+l);
-                btn.innerText = `${l.toUpperCase()}. ${q[l]}`;
-                btn.className = selections[currentQ] === l 
-                    ? "w-full p-4 border-2 border-blue-600 bg-blue-50 text-blue-900 rounded-xl text-left transition-all" 
-                    : "w-full p-4 border border-slate-200 bg-white text-slate-700 rounded-xl text-left hover:border-blue-300 transition-all";
-            });
-            
-            document.getElementById('prev-btn').classList.toggle('hidden', currentQ === 0);
-            if(currentQ === questions.length - 1) {
-                document.getElementById('next-btn').innerText = "റിവ്യൂവിലേക്ക്";
-            } else {
-                document.getElementById('next-btn').innerText = "അടുത്തത്";
-            }
-        };
-
-        window.selectOpt = (opt) => { 
-            selections[currentQ] = opt; 
-            localStorage.setItem('tlj_finalexam_selections', JSON.stringify(selections));
-            renderQuestion(); 
-        };
-        
-        window.goNext = () => {
-            if (currentQ < questions.length - 1) { currentQ++; renderQuestion(); } 
-            else { showReview(); }
-        };
-
-        window.goPrev = () => {
-            if (currentQ > 0) { currentQ--; renderQuestion(); }
-        };
-
-        window.goBackToQuiz = () => {
-            document.getElementById('review-screen').classList.add('hidden');
-            document.getElementById('quiz-screen').classList.remove('hidden');
-            renderQuestion();
-        };
-
-        window.showReview = () => {
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('review-screen').classList.remove('hidden');
-            const list = document.getElementById('review-list');
-            list.innerHTML = questions.map((q, i) => {
-                const isSelected = !!selections[i];
-                const cardClass = isSelected 
-                    ? "p-4 bg-white rounded-lg mb-3 border border-blue-100 shadow-sm relative pr-14"
-                    : "p-4 bg-red-50 rounded-lg mb-3 border border-red-300 shadow-sm relative pr-14";
-                const btnClass = isSelected
-                    ? "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200"
-                    : "bg-red-100 text-red-800 border-red-300 hover:bg-red-200 animate-pulse";
-                
-                return `
-                <div class="${cardClass}">
-                    <button onclick="goToQuestionFromReview(${i})" class="absolute top-4 right-4 h-8 w-8 rounded-full font-bold flex items-center justify-center shadow-sm transition-colors cursor-pointer border ${btnClass}" title="ചോദ്യത്തിലേക്ക് തിരികെ പോവുക">
-                        ${isSelected ? selections[i].toUpperCase() : '?'}
-                    </button>
-                    <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
-                    <select onchange="updateSelection(${i}, this.value)" class="mt-2 w-full text-xs border ${isSelected ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-red-200 bg-white text-red-900'} p-2 rounded-lg">
-                        <option value="" disabled ${!isSelected ? 'selected' : ''}>-- ഉത്തരം തിരഞ്ഞെടുക്കുക --</option>
-                        <option value="a" ${selections[i]==='a'?'selected':''}>A. ${q.a}</option>
-                        <option value="b" ${selections[i]==='b'?'selected':''}>B. ${q.b}</option>
-                        <option value="c" ${selections[i]==='c'?'selected':''}>C. ${q.c}</option>
-                        <option value="d" ${selections[i]==='d'?'selected':''}>D. ${q.d}</option>
-                    </select>
-                </div>
-                `;
-            }).join('');
-        };
-
-        window.goToQuestionFromReview = (index) => {
-            currentQ = index;
-            document.getElementById('review-screen').classList.add('hidden');
-            document.getElementById('quiz-screen').classList.remove('hidden');
-            renderQuestion();
-        };
-
-        window.updateSelection = (index, val) => { 
-            selections[index] = val; 
-            localStorage.setItem('tlj_finalexam_selections', JSON.stringify(selections));
-            showReview(); // Re-render to update the top-right button letter
-        };
-
-        window.submitQuiz = async (autoSubmit = false) => {
-            try {
-                const btn = document.querySelector('button[onclick="submitQuiz()"]');
-                if (btn) btn.innerText = "Submitting...";
-
-                if (timerInterval) clearInterval(timerInterval);
-                
-                const score = selections.filter((s, i) => questions[i] && s === questions[i].correct).length;
-                await addDoc(resultsCol, { ...studentData, selections, score, at: serverTimestamp() });
-                
-                localStorage.removeItem('tlj_finalexam_start');
-                localStorage.removeItem('tlj_finalexam_selections');
-
-                if (autoSubmit) {
-                    document.getElementById('quiz-screen').classList.add('hidden');
-                }
-                document.getElementById('review-screen').classList.add('hidden');
-                document.getElementById('finish-screen').classList.remove('hidden');
-            } catch (err) {
-                console.error("Submit Error:", err);
-                alert("സബ്മിറ്റ് ചെയ്യുന്നതിൽ പിശക്! ഇന്റർനെറ്റ് പരിശോധിച്ചു വീണ്ടും ശ്രമിക്കുക. Error: " + err.message);
-                const btn = document.querySelector('button[onclick="submitQuiz()"]');
-                if (btn) btn.innerText = "ഫൈനൽ സബ്മിറ്റ്";
-            }
-        };
-
-        // ADMIN LOGIC
-        window.checkAdmin = async () => {
-            const pw = prompt("Password നൽകുക:");
-            if(pw === "admin456") {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('admin-screen').classList.remove('hidden');
-                await loadConfigAndQuestions();
-                loadAdminData();
-                loadExamStatus();
-            }
-        };
-
-        window.loadAdminData = loadAdminData;
-        async function loadAdminData() {
-            try { await signInAnonymously(auth); } catch(e) {}
-            try {
-                const snap = await getDocs(resultsCol);
-                const tbody = document.getElementById('admin-table-body');
-                tbody.innerHTML = '';
-                snap.forEach(docSnap => {
-                    const d = docSnap.data();
-                    tbody.innerHTML += `
-                        <tr class="border-b border-blue-50 text-[11px]">
-                            <td class="p-3 font-medium">${d.name}</td>
-                            <td class="p-3 text-slate-500 tracking-wider">${d.mobile}</td>
-                            <td class="p-3 font-bold text-blue-600">${d.score}/${questions.length}</td>
-                            <td class="p-3">${d.approved ? '<span class="text-green-600">Approved</span>' : '<span class="text-amber-500">Pending</span>'}</td>
-                            <td class="p-3 flex gap-2">
-                                <button onclick="deleteEntry('${docSnap.id}')" class="text-red-500 hover:underline">Delete</button>
-                                ${!d.approved ? `<button onclick="approveEntry('${docSnap.id}')" class="text-blue-600 font-bold hover:underline">Approve</button>` : ''}
-                            </td>
-                        </tr>`;
-                });
-            } catch (err) {
-                console.error("Admin Load Error", err);
-                alert("ഡാറ്റ ലഭ്യമാക്കുന്നതിൽ പിശക്. ഇന്റർനെറ്റ് പരിശോധിക്കുക.");
-            }
-        }
-
-        window.exportExcel = async () => {
-            const snap = await getDocs(resultsCol);
-            const data = snap.docs.map(doc => {
-                const d = doc.data();
-                const row = { Name: d.name, Place: d.place, Mobile: d.mobile, Score: d.score, Time: d.at?.toDate().toLocaleString() };
-                questions.forEach((q, i) => row[`Q${i+1}`] = d.selections[i] ? d.selections[i].toUpperCase() : 'N/A');
-                return row;
-            });
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "QuizResults");
-            XLSX.writeFile(wb, "VR26.xlsx");
-        };
-
-        window.approveAll = async () => {
-            if(!confirm("എല്ലാ വിദ്യാർത്ഥികളെയും അപ്രൂവ് ചെയ്യണോ?")) return;
-            const snap = await getDocs(resultsCol);
-            const batch = writeBatch(db);
-            snap.forEach(d => batch.update(d.ref, { approved: true }));
-            await batch.commit();
-            loadAdminData();
-        };
-
-        window.deleteEntry = async (id) => { if(confirm("ഈ എൻട്രി നീക്കം ചെയ്യണോ?")) { await deleteDoc(doc(db, "quiz_results", id)); loadAdminData(); } };
-        window.approveEntry = async (id) => { await updateDoc(doc(db, "quiz_results", id), { approved: true }); loadAdminData(); };
-
-        window.loadExamStatus = async () => {
-            const btn = document.getElementById('exam-status-btn');
-            try {
-                const docSnap = await getDoc(controlDocRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    updateExamStatusButton(data.isOpen !== false);
-                    if (data.durationMinutes) {
-                        document.getElementById('admin-duration').value = data.durationMinutes;
-                        examDurationSeconds = parseInt(data.durationMinutes) * 60;
+                    const qSnap = await getDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "questions"));
+                    if (qSnap.exists() && qSnap.data().questions && qSnap.data().questions.length > 0) {
+                        questions = qSnap.data().questions;
                     }
-                } else {
-                    // default to open
-                    updateExamStatusButton(true);
+                } catch(e) { console.error("Could not load custom questions.", e); }
+
+                // Check if the student already submitted
+                const existing = await getExistingSubmission(mobile);
+                if(existing) {
+                    if (existing.approved) {
+                        showStudentResult(existing);
+                    } else {
+                        alert("You have already submitted. Please wait for admin approval to view your results.");
+                        submitBtn.innerText = originalText;
+                        submitBtn.disabled = false;
+                    }
+                    return;
                 }
             } catch (e) {
                 console.error(e);
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+                return;
             }
-        };
 
-        window.updateExamStatusButton = (isOpen) => {
-            const btn = document.getElementById('exam-status-btn');
-            if (isOpen) {
-                btn.innerText = "EXAM: OPEN";
-                btn.className = "bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors";
-                btn.dataset.status = "open";
+            localStorage.setItem('tlj_name', name);
+            localStorage.setItem('tlj_place', place);
+            localStorage.setItem('tlj_mobile', mobile);
+            localStorage.setItem('tlj_dob', dob);
+            studentData = { name, place, mobile, dob, approved: false };
+            studentSelections = Array(questions.length).fill().map(() => ([]));
+            hasReachedReview = false;
+            showScreen('quiz-screen');
+            
+            // Check if there is a saved timer for this mobile number; if so, resume it.
+            const savedTimer = localStorage.getItem(`tlj_timer_${mobile}`);
+            if (savedTimer && !isNaN(parseInt(savedTimer))) {
+                timeLeft = parseInt(savedTimer);
+                // If they reloaded after time was already up (or very close), submit it immediately
+                if (timeLeft <= 0) {
+                    timeLeft = 0;
+                    updateTimerUI();
+                    autoSubmit();
+                    return;
+                }
             } else {
-                btn.innerText = "EXAM: CLOSED";
-                btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-red-700 transition-colors";
-                btn.dataset.status = "closed";
+                timeLeft = dbDuration; // Reset to configured down only if brand new attempt
+            }
+            updateTimerUI();
+            startTimer();
+            renderQuestion();
+        };
+
+        const renderQuestion = () => {
+            const q = questions[currentQuestion];
+            document.getElementById('q-title').innerText = `Question ${currentQuestion + 1} of ${questions.length} - ${q.marks || 1} Mark${(q.marks || 1) > 1 ? 's' : ''}`;
+            document.getElementById('q-text').innerText = q.q;
+            ['a','b','c','d'].forEach(l => {
+                const btn = document.getElementById('btn-opt-' + l);
+                document.getElementById('opt-' + l).innerText = q[l];
+                if (studentSelections[currentQuestion].includes(l)) {
+                    btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                    btn.classList.remove('bg-white', 'text-slate-700', 'border-slate-200');
+                } else {
+                    btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+                    btn.classList.add('bg-white', 'text-slate-700', 'border-slate-200');
+                }
+            });
+            if (hasReachedReview) {
+                document.getElementById('prev-btn').style.visibility = 'hidden';
+                document.getElementById('next-btn').innerText = 'Back to Review';
+            } else {
+                document.getElementById('prev-btn').style.visibility = currentQuestion === 0 ? 'hidden' : 'visible';
+                document.getElementById('next-btn').innerText = currentQuestion === questions.length - 1 ? 'Review Answers' : 'Next';
+            }
+            document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+        };
+
+        window.selectOption = (opt) => { 
+            const sels = studentSelections[currentQuestion];
+            if (sels.includes(opt)) {
+                studentSelections[currentQuestion] = sels.filter(o => o !== opt);
+            } else {
+                sels.push(opt);
+            }
+            renderQuestion(); 
+        };
+        window.goPrev = () => { if (currentQuestion > 0) { currentQuestion--; renderQuestion(); } };
+        window.goNextOrReview = () => {
+            if (hasReachedReview) { showReview(); }
+            else if (currentQuestion < questions.length - 1) { currentQuestion++; renderQuestion(); } else { showReview(); }
+        };
+
+        const showReview = () => {
+            hasReachedReview = true;
+            showScreen('review-screen');
+            const container = document.getElementById('review-list');
+            container.innerHTML = '';
+            questions.forEach((q, i) => {
+                const sel = studentSelections[i] || [];
+                const isUnanswered = sel.length === 0;
+                const selUpper = sel.length ? sel.map(s => s.toUpperCase()).join(',') : '?';
+                const textLabel = sel.length ? sel.map(s => q[s]).join(', ') : "No answer";
+                const item = document.createElement('div');
+                item.className = `flex flex-col p-5 border-b text-sm ${isUnanswered ? 'bg-red-50 border-red-200' : 'bg-white'}`;
+                item.innerHTML = `<div class="flex justify-between mb-2"><span class="font-black ${isUnanswered ? 'text-red-600' : 'text-blue-600'} text-[10px]">Q${i+1} (${q.marks || 1} Mark${(q.marks || 1) > 1 ? 's' : ''}) ${isUnanswered ? '- UNANSWERED' : ''}</span><button onclick="editQuestion(${i})" class="${isUnanswered ? 'text-red-500 hover:text-red-700' : 'text-blue-500 font-bold hover:text-blue-700'} font-bold text-[10px] underline transition-colors">EDIT</button></div><div class="font-bold mb-3 ${isUnanswered ? 'text-red-900' : ''}">${q.q}</div><div class="flex items-center gap-3"><span class="px-2 py-1 min-w-[24px] rounded ${isUnanswered ? 'bg-red-500' : 'bg-blue-600'} text-white flex items-center justify-center text-[10px] font-bold">${selUpper}</span><span class="font-bold ${isUnanswered ? 'text-red-700' : 'text-slate-700'}">${textLabel}</span></div>`;
+                container.appendChild(item);
+            });
+        };
+
+        window.editQuestion = (idx) => { currentQuestion = idx; showScreen('quiz-screen'); renderQuestion(); };
+
+        window.submitResult = async () => {
+            if (isSubmitted) return;
+            const btn = document.getElementById('final-submit-btn');
+            btn.disabled = true; btn.innerText = "Saving...";
+
+            try {
+                // Check Global Exam Status Before Submission
+                const configSnap = await getDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "settings"));
+                if (configSnap.exists()) {
+                    if (configSnap.data().examStatus !== "open") {
+                        alert("The exam has been closed by the admin. Submissions are no longer accepted.");
+                        btn.disabled = false; btn.innerText = "CONFIRM & SUBMIT";
+                        return;
+                    }
+                }
+
+                const score = studentSelections.reduce((acc, sel, i) => {
+                    if (!questions[i]) return acc;
+                    const correct = questions[i].correct;
+                    const correctArr = Array.isArray(correct) ? correct : [correct];
+                    if (!sel || !Array.isArray(sel) || sel.length !== correctArr.length) return acc;
+                    
+                    const sortedS = [...sel].sort();
+                    const sortedC = [...correctArr].sort();
+                    if (sortedS.every((val, index) => val === sortedC[index])) {
+                        return acc + (Number(questions[i].marks) || 1);
+                    }
+                    return acc;
+                }, 0);
+
+                const existing = await getExistingSubmission(studentData.mobile);
+                if(existing) {
+                    alert("A submission for this number already exists.");
+                    location.reload();
+                    return;
+                }
+                
+                // Firestore does not support arrays containing arrays natively. 
+                // We'll convert each selection array to a comma-separated string, 
+                // e.g., ["a", "d"] becomes "a,d", to easily store it in Firestore.
+                const stringifiedSelections = studentSelections.map(sel => sel.join(','));
+                const maxScore = questions.reduce((sum, q) => sum + (Number(q.marks) || 1), 0);
+
+                await addDoc(collection(db, "artifacts", appId, "public", "data", "quizLSO_results"), {
+                    ...studentData, score, maxScore, selections: stringifiedSelections, at: serverTimestamp()
+                });
+                isSubmitted = true;
+                if(timerInterval) clearInterval(timerInterval);
+                localStorage.removeItem(`tlj_timer_${studentData.mobile}`); // Clear saved timer
+                showScreen('finish-screen');
+            } catch (e) {
+                console.error(e);
+                alert("Submit Error: " + (e.message || "Unknown error. Please check your connection."));
+                btn.disabled = false; btn.innerText = "CONFIRM & SUBMIT";
             }
         };
 
-        window.toggleExamStatus = async () => {
-            const btn = document.getElementById('exam-status-btn');
-            const isCurrentlyOpen = btn.dataset.status === "open";
-            const newStatus = !isCurrentlyOpen;
-            if (confirm(`പരീക്ഷ ${newStatus ? 'OPEN' : 'CLOSE'} ചെയ്യണോ?`)) {
-                await setDoc(controlDocRef, { isOpen: newStatus }, { merge: true });
-                updateExamStatusButton(newStatus);
+        const showStudentResult = (data) => {
+            showScreen('student-result-screen');
+            document.getElementById('sr-name').innerText = data.name;
+            document.getElementById('sr-details').innerText = `${data.place} | ${data.mobile}`;
+            const maxScore = data.maxScore || questions.reduce((sum, q) => sum + (Number(q.marks) || 1), 0);
+            document.getElementById('sr-score').innerText = `${data.score}/${maxScore}`;
+            
+            const list = document.getElementById('sr-answers-list');
+            list.innerHTML = '';
+            
+            // Loop based on how many selections were saved, up to the number of currently active uploaded questions
+            // This prevents errors if questions were deleted after the quiz was taken
+            const limit = data.selections ? data.selections.length : questions.length;
+            
+            for(let i = 0; i < limit; i++) {
+                const q = questions[i];
+                if (!q) continue; // If there are fewer live questions than selections
+
+                const storedSel = (data.selections && data.selections[i]) ? data.selections[i] : "";
+                const sel = storedSel.length > 0 ? storedSel.split(',') : [];
+                
+                const correct = Array.isArray(q.correct) ? q.correct : [q.correct];
+                
+                let isCorrect = false;
+                if (sel.length === correct.length && sel.length > 0) {
+                    const sortedS = [...sel].sort();
+                    const sortedC = [...correct].sort();
+                    if (sortedS.every((val, index) => val === sortedC[index])) {
+                        isCorrect = true;
+                    }
+                }
+                
+                const selText = sel.length ? sel.map(s => q[s]).join(', ') : "No answer";
+                const correctText = correct.map(c => q[c]).join(', ');
+
+                const item = document.createElement('div');
+                item.className = `p-4 border rounded-2xl mb-4 ${isCorrect ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`;
+                item.innerHTML = `
+                    <p class="text-[10px] font-black uppercase mb-1 ${isCorrect ? 'text-emerald-600' : 'text-red-600'}">Question ${i+1} <span class="text-slate-400 font-bold">(${q.marks || 1} Mark${(q.marks || 1) > 1 ? 's' : ''})</span></p>
+                    <p class="font-bold text-slate-800 text-sm mb-3">${q.q}</p>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="px-2 py-1 min-w-[20px] flex items-center justify-center rounded bg-slate-200 font-bold">${sel.length ? sel.map(s=>s.toUpperCase()).join(',') : '?'}</span>
+                            <span class="${isCorrect ? 'text-emerald-700 font-bold' : 'text-red-700 font-bold'}">Your Answer: ${sel.length ? selText : 'Skipped'}</span>
+                        </div>
+                        ${!isCorrect ? `
+                        <div class="flex items-center gap-2 text-xs text-slate-500 italic">
+                            <span class="px-2 py-1 min-w-[20px] flex items-center justify-center rounded bg-emerald-200 font-bold text-emerald-800">${correct.map(c=>c.toUpperCase()).join(',')}</span>
+                            <span>Correct Answer: ${correctText}</span>
+                        </div>` : ''}
+                    </div>
+                `;
+                list.appendChild(item);
+            }
+        };
+
+        // ADMIN FUNCTIONS
+        window.openAdmin = () => {
+            const savedPass = localStorage.getItem('tlj_admin_auth');
+            if (savedPass === "LSO2026@siicNC") {
+                showScreen('admin-panel'); loadResults(); loadExamStatus();
+                return;
+            }
+
+            const pass = prompt("Admin Password:");
+            if(pass === "LSO2026@siicNC") { 
+                localStorage.setItem('tlj_admin_auth', pass);
+                showScreen('admin-panel'); loadResults(); loadExamStatus(); 
+            }
+            else if(pass !== null) { alert("Wrong password."); }
+        };
+
+        async function loadExamStatus() {
+            try {
+                const configSnap = await getDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "settings"));
+                if (configSnap.exists()) {
+                    updateExamStatusUI(configSnap.data().examStatus);
+                    updateAllowAnyUI(configSnap.data().allowAnyMobile);
+                    if (configSnap.data().durationMinutes) {
+                        document.getElementById('admin-duration').value = configSnap.data().durationMinutes;
+                    }
+                } else {
+                    // Default to closed if not set
+                    await setDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "settings"), { examStatus: "closed", allowAnyMobile: false, admin_secret: ADMIN_SECRET });
+                    updateExamStatusUI("closed");
+                    updateAllowAnyUI(false);
+                }
+            } catch (e) {
+                console.error("Error loading exam status", e);
+            }
+        }
+
+        function updateAllowAnyUI(isAllowed) {
+            const toggleBtn = document.getElementById('allow-any-toggle');
+            if(toggleBtn) {
+                if(isAllowed) {
+                    toggleBtn.innerText = "ON (Open to All)";
+                    toggleBtn.className = "bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-black uppercase hover:bg-emerald-600 transition-colors";
+                    toggleBtn.dataset.status = "on";
+                } else {
+                    toggleBtn.innerText = "OFF (Strict Mode)";
+                    toggleBtn.className = "bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-xs font-black uppercase hover:bg-slate-400 transition-colors";
+                    toggleBtn.dataset.status = "off";
+                }
+            }
+        }
+
+        window.toggleAllowAnyMobile = async () => {
+            const btn = document.getElementById('allow-any-toggle');
+            const newStatus = btn.dataset.status !== "on";
+            if (!confirm(`Are you sure you want to ${newStatus ? 'ALLOW ANY MOBILE NUMBER' : 'RESTRICT TO AUTHORIZED NUMBERS'}?`)) return;
+            try {
+                await setDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "settings"), { allowAnyMobile: newStatus, admin_secret: ADMIN_SECRET }, { merge: true });
+                updateAllowAnyUI(newStatus);
+            } catch(e) {
+                console.error("Failed to update allow any status", e);
+                alert("Failed to update.");
             }
         };
 
         window.saveDuration = async () => {
             const minStr = document.getElementById('admin-duration').value;
             const min = parseInt(minStr, 10);
-            if (isNaN(min) || min < 1) return alert("ദയവായി ശരിയായ സമയം നൽകുക.");
+            if (isNaN(min) || min < 1) return alert("Please enter a valid time in minutes.");
             
             try {
-                await setDoc(controlDocRef, { durationMinutes: min }, { merge: true });
-                examDurationSeconds = min * 60;
-                alert(`സമയം ${min} മിനിറ്റ് ആയി സേവ് ചെയ്തു.`);
+                await setDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "settings"), { durationMinutes: min, admin_secret: ADMIN_SECRET }, { merge: true });
+                alert(`Duration saved as ${min} minutes.`);
             } catch (err) {
-                console.error("Save Duration Error", err);
-                alert("സമയം സേവ് ചെയ്യുന്നതിൽ പിശക്!");
+                console.error(err);
+                alert("Failed to save duration!");
             }
         };
 
-        window.downloadTemplate = () => {
+        window.downloadMobileTemplate = () => {
             const wsData = [
-                ["No", "Question", "Option A", "Option B", "Option C", "Option D", "Correct Answer (a, b, c, or d)"],
-                [1, "Sample Question: What is the capital of Saudi Arabia?", "Jeddah", "Riyadh", "Mecca", "Medina", "b"],
-                [2, "Sample Question: Which among these is an apple?", "Apple", "Car", "Banana", "Bus", "a"]
+                ["Mobile Number", "Name (Optional)", "Place (Optional)"],
+                ["966-501797382", "John Doe", "Riyadh"],
+                ["91-7356160643", "Jane Smith", "Kerala"]
             ];
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Template");
-            XLSX.writeFile(wb, "FinalExam_Question_Template.xlsx");
-        };
-
-        window.uploadQuestions = async () => {
-            const fileInput = document.getElementById('question-upload');
-            
-            if (!fileInput.files.length) return alert("ദയവായി Excel ഫയൽ തിരഞ്ഞെടുക്കുക.");
-            
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            reader.onload = async (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-                // validate header length, usually minimum 7 columns
-                if(rows.length < 2) return alert("വാലിഡായ ചോദ്യങ്ങൾ കണ്ടെത്താനായില്ല.");
-                
-                let newQuestions = [];
-                for (let i = 1; i < rows.length; i++) {
-                    const r = rows[i];
-                    if (!r[1]) continue; // Skip empty question rows
-                    
-                    let correctRaw = r[6] ? String(r[6]).toLowerCase().trim() : "";
-                    
-                    if (!['a','b','c','d'].includes(correctRaw)) {
-                        return alert(`രിരികെ പിഴവ്: ചോദ്യം ${i} ലെ ശരിയായ ഉത്തരം നൽകിയിട്ടില്ല അഥവാ തെറ്റാണ് (a, b, c, or d മാത്രം).`);
-                    }
-
-                    newQuestions.push({
-                        q: String(r[1] || ""),
-                        a: String(r[2] || ""),
-                        b: String(r[3] || ""),
-                        c: String(r[4] || ""),
-                        d: String(r[5] || ""),
-                        correct: correctRaw
-                    });
-                }
-                
-                if (newQuestions.length === 0) return alert("യാതൊരു ചോദ്യങ്ങളും വായിക്കാൻ കഴിഞ്ഞില്ല.");
-                if (!confirm(`${newQuestions.length} ചോദ്യങ്ങൾ ചോദ്യാവലിയിലേക്ക് മാറ്റാൻ താങ്കൾക്ക് ഉറപ്പാണോ? (പഴയവ മായ്ക്കപ്പെടും)`)) return;
-
-                const uploadBtn = document.getElementById('upload-btn');
-                uploadBtn.innerText = "Uploading...";
-                
-                try {
-                    await setDoc(doc(db, "quiz_questions", "default"), { questions: newQuestions });
-                    alert(`വിജയകരമായി ചോദ്യങ്ങൾ അപ്ഡേറ്റ് ചെയ്തു!`);
-                    fileInput.value = ""; // clear
-                } catch (err) {
-                    console.error("Upload Questions Error", err);
-                    alert("ചോദ്യങ്ങൾ സേവ് ചെയ്യുന്നതിൽ പിശക്!");
-                } finally {
-                    uploadBtn.innerText = "UPLOAD";
-                }
-            };
-            
-            reader.readAsArrayBuffer(file);
-        };
-
-        window.downloadMobilesTemplate = () => {
-            const wsData = [
-                ["Mobile Number"],
-                ["966-501797382"],
-                ["91-7034253576"]
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Mobiles");
-            XLSX.writeFile(wb, "Authorized_Mobiles_Template.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "Authorized Numbers");
+            XLSX.writeFile(wb, "VR2026_Authorized_Mobiles_Template.xlsx");
         };
 
         window.uploadMobiles = async () => {
             const fileInput = document.getElementById('mobile-upload');
-            if (!fileInput.files.length) return alert("ദയവായി Excel ഫയൽ തിരഞ്ഞെടുക്കുക.");
+            if (!fileInput.files.length) return alert("Please select an Excel file.");
             
             const file = fileInput.files[0];
             const reader = new FileReader();
@@ -607,181 +572,636 @@
                 const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
                 
                 let newMobiles = [];
+                let details = {};
+
                 for (let i = 1; i < rows.length; i++) {
-                    const r = rows[i];
-                    if (r[0]) {
-                        newMobiles.push(String(r[0]).trim());
+                    const mobile = rows[i][0];
+                    if (mobile) {
+                        const mStr = String(mobile).trim();
+                        newMobiles.push(mStr);
+                        details[mStr] = {
+                            name: rows[i][1] ? String(rows[i][1]).trim() : "",
+                            place: rows[i][2] ? String(rows[i][2]).trim() : ""
+                        };
                     }
                 }
                 
-                if (newMobiles.length === 0) return alert("വാലിഡായ മൊബൈൽ നമ്പറുകൾ കണ്ടെത്താനായില്ല.");
-                if (!confirm(`${newMobiles.length} നമ്പറുകൾ അപ്ഡേറ്റ് ചെയ്യാൻ താങ്കൾക്ക് ഉറപ്പാണോ? (പഴയവ മായ്ക്കപ്പെടും)`)) return;
+                if (newMobiles.length === 0) return alert("No valid mobile numbers found.");
+                if (!confirm(`Are you sure you want to authorize ${newMobiles.length} numbers? This will replace the current authorized list.`)) return;
 
-                const btn = document.getElementById('upload-mobiles-btn');
-                btn.innerText = "Uploading...";
+                const uploadBtn = document.getElementById('upload-mobiles-btn');
+                uploadBtn.innerText = "Uploading...";
                 
                 try {
-                    await setDoc(doc(db, "quiz_control", "allowed_mobiles"), { mobiles: newMobiles });
-                    alert("മൊബൈൽ നമ്പറുകൾ വിജയകരമായി അപ്ഡേറ്റ് ചെയ്തു!");
+                    await setDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "authorized_mobiles"), { mobiles: newMobiles, details: details, admin_secret: ADMIN_SECRET });
+                    alert(`Successfully updated authorized list with ${newMobiles.length} numbers!`);
                     fileInput.value = "";
                 } catch (err) {
-                    console.error("Upload Mobiles Error", err);
-                    alert("സേവ് ചെയ്യുന്നതിൽ പിശക്!");
+                    console.error(err);
+                    alert("Failed to save authorized numbers!");
                 } finally {
-                    btn.innerText = "UPLOAD";
+                    uploadBtn.innerText = "UPLOAD";
                 }
             };
+            
             reader.readAsArrayBuffer(file);
         };
 
-        window.onload = () => {
-            const cached = localStorage.getItem('tlj_student');
-            if(cached) {
+        window.downloadQuestionTemplate = () => {
+            const wsData = [
+                ["No", "Question", "Option A", "Option B", "Option C", "Option D", "Correct Answers (comma separated)", "Marks (Optional)"],
+                [1, "Sample Question 1?", "A", "B", "C", "D", "a", 2],
+                [2, "Sample Question 2?", "A", "B", "C", "D", "b, d", 1]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Template");
+            XLSX.writeFile(wb, "VR2026_Question_Template.xlsx");
+        };
+
+        window.uploadQuestions = async () => {
+            const fileInput = document.getElementById('question-upload');
+            if (!fileInput.files.length) return alert("Please select an Excel file.");
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                if (rows.length < 2) return alert("No valid questions found.");
+                
+                let newQuestions = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    
+                    // Skip empty rows or rows that might just be calculating a 'sum' at the bottom
+                    if (!r[1] || String(r[1]).trim() === "") continue;
+                    if (!r[6] || String(r[6]).trim() === "") continue;
+                    
+                    let correctRaw = String(r[6]).toLowerCase();
+                    let correctArr = correctRaw.split(',').map(s => s.trim()).filter(s => ['a','b','c','d'].includes(s));
+                    
+                    if (correctArr.length === 0) {
+                        return alert(`Error: Question ${i} does not have a valid correct answer.`);
+                    }
+
+                    let marks = 1;
+                    if (r[7] !== undefined && r[7] !== null && String(r[7]).trim() !== "") {
+                        let parsedMark = Number(r[7]);
+                        if (!isNaN(parsedMark) && parsedMark > 0) {
+                            marks = parsedMark;
+                        }
+                    }
+
+                    newQuestions.push({
+                        q: String(r[1] || ""),
+                        a: String(r[2] || ""),
+                        b: String(r[3] || ""),
+                        c: String(r[4] || ""),
+                        d: String(r[5] || ""),
+                        correct: correctArr.length === 1 ? correctArr[0] : correctArr,
+                        marks: marks
+                    });
+                }
+                
+                if (newQuestions.length === 0) return alert("No questions could be read.");
+                if (!confirm(`Are you sure you want to upload ${newQuestions.length} questions? This will replace the current questions for new submissions.`)) return;
+
+                const uploadBtn = document.getElementById('upload-btn');
+                uploadBtn.innerText = "Uploading...";
+                
                 try {
-                    const data = JSON.parse(cached);
-                    if(data.name) document.getElementById('name').value = data.name;
-                    if(data.place) document.getElementById('place').value = data.place;
-                    if(data.raw_mobile) document.getElementById('mobile').value = data.raw_mobile;
-                } catch(e) {}
+                    await setDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "questions"), { questions: newQuestions, admin_secret: ADMIN_SECRET });
+                    alert(`Successfully updated with ${newQuestions.length} questions!`);
+                    fileInput.value = "";
+                } catch (err) {
+                    console.error(err);
+                    alert("Failed to save questions!");
+                } finally {
+                    uploadBtn.innerText = "UPLOAD";
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        };
+
+        function updateExamStatusUI(status) {
+            const statusIndicator = document.getElementById('exam-status-indicator');
+            const toggleBtn = document.getElementById('exam-status-toggle');
+            
+            if (status === "open") {
+                statusIndicator.innerText = "OPEN";
+                statusIndicator.className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase";
+                toggleBtn.innerText = "Close Exam";
+                toggleBtn.className = "bg-red-500 text-white px-4 py-2 rounded-xl text-xs font-black uppercase hover:bg-red-600 transition-colors";
+                toggleBtn.onclick = () => setExamStatus("closed");
+            } else {
+                statusIndicator.innerText = "CLOSED";
+                statusIndicator.className = "bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-black uppercase";
+                toggleBtn.innerText = "Open Exam";
+                toggleBtn.className = "bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-black uppercase hover:bg-emerald-600 transition-colors";
+                toggleBtn.onclick = () => setExamStatus("open");
+            }
+        }
+
+        window.setExamStatus = async (status) => {
+            if (!confirm(`Are you sure you want to ${status.toUpperCase()} the exam?`)) return;
+            try {
+                await setDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "settings"), { examStatus: status, admin_secret: ADMIN_SECRET }, { merge: true });
+                updateExamStatusUI(status);
+            } catch (e) {
+                console.error("Failed to update status", e);
+                alert("Failed to update exam status.");
             }
         };
 
-        signInAnonymously(auth);
-    </script>
-</head>
-<body class="p-4 flex flex-col items-center min-h-screen">
-    <div class="max-w-xl w-full glass rounded-[2.5rem] shadow-2xl overflow-hidden">
-        <div class="blue-gradient p-8 text-center text-white">
-            <h1 class="text-2xl font-bold">വെളിച്ചം റമദാൻ <br> 2026 (VR2026)</h1>
-            <p class="text-blue-100 text-xs mt-2"><a href="https://velichamsaudionline.com/" target="_blank" class="hover:text-white underline transition-colors">velichamsaudionline.com</a></p>
-        </div>
+        // ADMIN QUESTION EDITOR
+        let adminEditingQuestions = [];
 
-        <div class="p-8">
-            <div id="login-screen" class="space-y-4">
-                <input type="text" id="name" placeholder="പൂർണ്ണ നാമം (Name)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                <input type="text" id="place" placeholder="സ്ഥലം (Place)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                <input type="text" id="mobile" placeholder="മൊബൈൽ (eg: 91-7034253576)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                <button onclick="startQuiz()" class="w-full blue-gradient text-white p-5 rounded-2xl font-bold shadow-lg hover:scale-[1.02] active:scale-95 transition-all">പ്രവേശിക്കുക</button>
-                <button onclick="checkAdmin()" class="w-full text-slate-400 text-[10px] mt-6 hover:text-blue-500 uppercase tracking-widest">Admin Access</button>
+        window.openQuestionEditor = async () => {
+            adminEditingQuestions = [...questions];
+            try {
+                const qSnap = await getDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "questions"));
+                if (qSnap.exists() && qSnap.data().questions) {
+                    adminEditingQuestions = qSnap.data().questions;
+                }
+            } catch(e) {
+                console.error("Failed fetching for editor", e);
+            }
+            renderAdminEditor();
+            showScreen('admin-editor-screen');
+        };
+
+        window.renderAdminEditor = () => {
+            const container = document.getElementById('admin-editor-list');
+            container.innerHTML = '';
+            
+            adminEditingQuestions.forEach((q, i) => {
+                const correctStr = Array.isArray(q.correct) ? q.correct.join(', ') : q.correct;
+                
+                container.innerHTML += `
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-black text-blue-600 text-xs">Question ${i+1}</span>
+                        <button onclick="deleteAdminQuestion(${i})" class="text-red-500 font-bold text-[10px] hover:underline">DELETE</button>
+                    </div>
+                    <textarea id="edit-q-${i}" class="w-full p-2 border border-slate-200 rounded mb-2 text-sm font-bold resize-none h-16" placeholder="Question Text">${q.q}</textarea>
+                    
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <div><label class="text-[10px] font-bold text-slate-500">Option A</label><input type="text" id="edit-a-${i}" value="${q.a}" class="w-full p-1.5 border rounded text-xs"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500">Option B</label><input type="text" id="edit-b-${i}" value="${q.b}" class="w-full p-1.5 border rounded text-xs"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500">Option C</label><input type="text" id="edit-c-${i}" value="${q.c}" class="w-full p-1.5 border rounded text-xs"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500">Option D</label><input type="text" id="edit-d-${i}" value="${q.d}" class="w-full p-1.5 border rounded text-xs"></div>
+                    </div>
+                    
+                    <div class="flex gap-4 items-center">
+                        <div class="flex-1">
+                            <label class="text-[10px] font-bold text-slate-500">Answers (Comma separated: a,b,c,d)</label>
+                            <input type="text" id="edit-correct-${i}" value="${correctStr}" class="w-full p-1.5 border border-emerald-300 rounded text-xs font-mono uppercase bg-emerald-50 text-emerald-700">
+                        </div>
+                        <div class="w-16">
+                            <label class="text-[10px] font-bold text-slate-500">Marks</label>
+                            <input type="number" id="edit-marks-${i}" value="${q.marks || 1}" class="w-full p-1.5 border border-blue-300 rounded text-xs font-bold text-center bg-blue-50 text-blue-700">
+                        </div>
+                    </div>
+                </div>`;
+            });
+        };
+
+        window.deleteAdminQuestion = (i) => {
+            if(confirm("Delete this question?")) {
+                adminEditingQuestions.splice(i, 1);
+                renderAdminEditor();
+            }
+        };
+
+        window.addAdminQuestion = () => {
+            adminEditingQuestions.push({ q: "", a: "", b: "", c: "", d: "", correct: ["a"], marks: 1 });
+            renderAdminEditor();
+            const container = document.getElementById('admin-editor-list');
+            setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
+        };
+
+        window.saveAdminQuestions = async () => {
+            const btn = document.getElementById('save-editor-btn');
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+            
+            let newQ = [];
+            for (let i = 0; i < adminEditingQuestions.length; i++) {
+                const qText = document.getElementById(`edit-q-${i}`).value.trim();
+                const aText = document.getElementById(`edit-a-${i}`).value.trim();
+                const bText = document.getElementById(`edit-b-${i}`).value.trim();
+                const cText = document.getElementById(`edit-c-${i}`).value.trim();
+                const dText = document.getElementById(`edit-d-${i}`).value.trim();
+                const correctRaw = document.getElementById(`edit-correct-${i}`).value.toLowerCase();
+                const marksRaw = document.getElementById(`edit-marks-${i}`).value;
+                
+                let correctArr = correctRaw.split(',').map(s => s.trim()).filter(s => ['a','b','c','d'].includes(s));
+                if (correctArr.length === 0) {
+                    alert(`Question ${i+1} has invalid correct answers. Please use a, b, c, or d.`);
+                    btn.disabled = false;
+                    btn.innerText = "Save Changes";
+                    return;
+                }
+                
+                let marks = 1;
+                let parsedMark = Number(marksRaw);
+                if (!isNaN(parsedMark) && parsedMark > 0) marks = parsedMark;
+
+                newQ.push({ q: qText, a: aText, b: bText, c: cText, d: dText, correct: correctArr, marks: marks });
+            }
+            
+            try {
+                await setDoc(doc(db, "artifacts", appId, "public", "data", "quizLSO_config", "questions"), { questions: newQ, admin_secret: ADMIN_SECRET });
+                questions = newQ; // update local
+                alert("Questions saved successfully.");
+                closeAdminEditor();
+            } catch(e) {
+                console.error(e);
+                alert("Failed to save changes.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Save Changes";
+            }
+        };
+
+        window.closeAdminEditor = () => {
+            showScreen('admin-panel');
+        };
+
+        window.loadResults = async function() {
+            const qSnap = await getDocs(query(collection(db, "artifacts", appId, "public", "data", "quizLSO_results"), orderBy("at", "desc")));
+            const tbody = document.getElementById('results-body');
+            tbody.innerHTML = '';
+            allResultsData = [];
+            qSnap.forEach(snap => {
+                const d = snap.data();
+                allResultsData.push({ id: snap.id, ...d });
+                tbody.innerHTML += `
+                    <tr class="border-b text-xs">
+                        <td class="p-3 font-bold">${d.name}<br><span class="text-[10px] text-slate-500 font-normal">DOB: ${d.dob ? new Date(d.dob).toLocaleDateString() : 'N/A'}</span></td>
+                        <td class="p-3">${d.place}</td>
+                        <td class="p-3 font-mono">${d.mobile}</td>
+                        <td class="p-3 text-center font-black">${d.score}/${d.maxScore || (d.selections ? d.selections.length : questions.length)}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-black ${d.approved ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'} uppercase">
+                                ${d.approved ? 'Live' : 'Hidden'}
+                            </span>
+                        </td>
+                        <td class="p-3 text-right flex gap-3 justify-end">
+                            ${!d.approved ? `<button onclick="approveResult('${snap.id}')" class="text-blue-600 font-black">APPROVE</button>` : ''}
+                            <button onclick="deleteResult('${snap.id}')" class="text-red-400 font-black">X</button>
+                        </td>
+                    </tr>`;
+            });
+            document.getElementById('total-count').innerText = allResultsData.length;
+        }
+
+        window.approveResult = async (id) => {
+            try {
+                const ref = doc(db, "artifacts", appId, "public", "data", "quizLSO_results", id);
+                await updateDoc(ref, { approved: true, admin_secret: ADMIN_SECRET });
+                loadResults();
+            } catch (e) {
+                alert("Failed to approve.");
+            }
+        };
+
+        window.approveAll = async () => {
+            if(!confirm("Release all results for students to see?")) return;
+            const btn = event.target;
+            btn.innerText = "Processing...";
+            const batch = writeBatch(db);
+            allResultsData.forEach(res => {
+                if(!res.approved) {
+                    const ref = doc(db, "artifacts", appId, "public", "data", "quizLSO_results", res.id);
+                    batch.update(ref, { approved: true, admin_secret: ADMIN_SECRET });
+                }
+            });
+            await batch.commit();
+            btn.innerText = "APPROVE ALL";
+            loadResults();
+        };
+
+        window.deleteResult = async (id) => {
+            if(confirm("Delete this entry? Student can try again after deletion.")) {
+                const pass = prompt("Enter specialized delete password:");
+                if (pass !== "Charge@1983") {
+                    alert("Incorrect delete password.");
+                    return;
+                }
+                const ref = doc(db, "artifacts", appId, "public", "data", "quizLSO_results", id);
+                await updateDoc(ref, { admin_secret: ADMIN_SECRET });
+                await deleteDoc(ref);
+                loadResults();
+            }
+        };
+
+        window.deleteAllResults = async () => {
+            if(allResultsData.length === 0) return alert("No results to delete.");
+            
+            const firstConfirm = confirm("Are you ABSOLUTELY SURE you want to delete ALL student results?");
+            if (!firstConfirm) return;
+            
+            const secondConfirm = prompt("This action CANNOT BE UNDONE. Type 'DELETE' to confirm:");
+            if (secondConfirm !== 'DELETE') {
+                alert("Bulk deletion cancelled.");
+                return;
+            }
+
+            const pass = prompt("Enter specialized delete password:");
+            if (pass !== "Charge@1983") {
+                alert("Incorrect delete password.");
+                return;
+            }
+
+            const btn = document.getElementById('delete-all-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "Deleting...";
+            btn.disabled = true;
+
+            try {
+                // We must first update all documents with the admin_secret so that the delete rule passes
+                const updateBatches = [];
+                let uBatch = writeBatch(db);
+                let uCount = 0;
+
+                allResultsData.forEach((res) => {
+                    const ref = doc(db, "artifacts", appId, "public", "data", "quizLSO_results", res.id);
+                    uBatch.update(ref, { admin_secret: ADMIN_SECRET });
+                    uCount++;
+                    
+                    if (uCount === 490) {
+                        updateBatches.push(uBatch.commit());
+                        uBatch = writeBatch(db);
+                        uCount = 0;
+                    }
+                });
+                
+                if (uCount > 0) {
+                    updateBatches.push(uBatch.commit());
+                }
+
+                await Promise.all(updateBatches);
+
+                // Now that they have the secret, we can delete them
+                const deleteBatches = [];
+                let dBatch = writeBatch(db);
+                let dCount = 0;
+
+                allResultsData.forEach((res) => {
+                    const ref = doc(db, "artifacts", appId, "public", "data", "quizLSO_results", res.id);
+                    dBatch.delete(ref);
+                    dCount++;
+                    
+                    if (dCount === 490) {
+                        deleteBatches.push(dBatch.commit());
+                        dBatch = writeBatch(db);
+                        dCount = 0;
+                    }
+                });
+                
+                if (dCount > 0) {
+                    deleteBatches.push(dBatch.commit());
+                }
+
+                await Promise.all(deleteBatches);
+                alert("All results have been successfully deleted.");
+                loadResults();
+            } catch (error) {
+                console.error("Error deleting all results: ", error);
+                alert("An error occurred while deleting. Some results may still exist.");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        };
+
+        const formatDate = (timestamp) => {
+            if (!timestamp) return "N/A";
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleString('en-GB');
+        };
+
+        window.downloadExcel = () => {
+            if(allResultsData.length === 0) return alert("No results to download.");
+            const sheetData = allResultsData.map(res => {
+                const row = { "Name": res.name, "Place": res.place, "Mobile": res.mobile, "Score": res.score, "Approved": res.approved ? "Yes" : "No", "Time": formatDate(res.at) };
+                const numQ = res.selections ? Math.max(res.selections.length, questions.length) : questions.length;
+                for(let i=0; i<numQ; i++) {
+                    const sel = res.selections ? res.selections[i] : null;
+                    // Because it's stored as "a,d" we can just render it. If it was empty, handle gracefully.
+                    row[`Q${i+1}`] = sel ? sel : 'N/A';
+                }
+                return row;
+            });
+            const ws = XLSX.utils.json_to_sheet(sheetData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Quiz Results");
+            XLSX.writeFile(wb, "VR2026_FinalExam_Results.xlsx");
+        };
+    </script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #student-result-screen, #student-result-screen * { visibility: visible; }
+            #student-result-screen { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+            .no-print { display: none !important; }
+            #sr-answers-list { max-height: none !important; overflow: visible !important; }
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc] min-h-screen p-4 flex flex-col items-center">
+
+    <nav class="w-full max-w-2xl flex justify-between items-center mb-8 mt-2">
+        <a href="https://velichamsaudionline.com/" class="flex items-center gap-2 text-blue-700 font-black text-xs tracking-widest hover:text-blue-900 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            velichamsaudionline.com
+        </a>
+        <div class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-black flex items-center gap-2 border border-blue-100">
+            <span id="timer-display">--:--</span>
+        </div>
+    </nav>
+
+    <div class="max-w-2xl w-full bg-white rounded-[2.5rem] shadow-2xl shadow-blue-900/10 overflow-hidden border border-slate-100">
+        <div class="h-2 w-full bg-blue-600"></div>
+        <div class="p-8 md:p-12">
+            
+            <div id="login-screen" class="space-y-6">
+                <div class="text-center mb-10">
+                    <h1 class="text-3xl font-black text-slate-800 tracking-tight mb-2 uppercase italic">വെളിച്ചം റമദാൻ 2026<br>Final Exam</h1>
+                    <p class="text-slate-400 text-sm font-semibold tracking-wide">Enter your details to Start or View Results</p>
+                </div>
+                <input type="text" id="mobile" placeholder="Mobile (966-XXXXXXXXX)" class="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:border-blue-400 transition-colors">
+                <div id="details-section" class="hidden space-y-6">
+                    <input type="text" id="name" placeholder="Full Name" class="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:border-blue-400 transition-colors">
+                    <input type="text" id="place" placeholder="Your Place" class="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:border-blue-400 transition-colors">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest pl-2 mb-1">Date of Birth</label>
+                        <input type="date" id="dob" class="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-slate-700 focus:border-blue-400 transition-colors text-slate-500 uppercase">
+                    </div>
+                </div>
+                <button id="login-btn" onclick="verifyMobile()" class="w-full bg-blue-600 text-white p-6 rounded-[1.5rem] font-black text-xl hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-200">VERIFY MOBILE</button>
+                <div class="text-center pt-8 border-t border-slate-50">
+                    <button onclick="openAdmin()" class="text-[10px] font-black tracking-[0.3em] text-slate-200 hover:text-blue-400 uppercase">Admin Access</button>
+                </div>
             </div>
 
             <div id="quiz-screen" class="hidden">
-                <div class="mb-4 flex justify-between items-center text-center">
-                    <span id="q-number" class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider"></span>
-                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full tracking-wider flex items-center gap-1 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-                        </svg>
-                        <span id="timer-display">10:00</span>
-                    </span>
+                <div class="mb-10">
+                    <h2 id="q-title" class="text-sm font-black text-blue-600 uppercase tracking-widest mb-4"></h2>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="bg-blue-600 h-full transition-all duration-500 w-0"></div>
+                    </div>
                 </div>
-                <div id="q-text" class="font-bold text-slate-800 text-lg mb-8 leading-relaxed"></div>
-                <div class="space-y-3">
-                    <button id="opt-a" onclick="selectOpt('a')" class="w-full p-4 border rounded-xl"></button>
-                    <button id="opt-b" onclick="selectOpt('b')" class="w-full p-4 border rounded-xl"></button>
-                    <button id="opt-c" onclick="selectOpt('c')" class="w-full p-4 border rounded-xl"></button>
-                    <button id="opt-d" onclick="selectOpt('d')" class="w-full p-4 border rounded-xl"></button>
+                <h3 id="q-text" class="text-xl md:text-2xl font-bold text-slate-800 mb-10 leading-tight"></h3>
+                <div class="space-y-4 mb-12">
+                    <button id="btn-opt-a" onclick="selectOption('a')" class="w-full text-left p-6 border-2 rounded-2xl transition-all flex items-center gap-6"><span class="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-slate-100 text-slate-500 shrink-0">A</span><span id="opt-a" class="flex-1 font-bold"></span></button>
+                    <button id="btn-opt-b" onclick="selectOption('b')" class="w-full text-left p-6 border-2 rounded-2xl transition-all flex items-center gap-6"><span class="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-slate-100 text-slate-500 shrink-0">B</span><span id="opt-b" class="flex-1 font-bold"></span></button>
+                    <button id="btn-opt-c" onclick="selectOption('c')" class="w-full text-left p-6 border-2 rounded-2xl transition-all flex items-center gap-6"><span class="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-slate-100 text-slate-500 shrink-0">C</span><span id="opt-c" class="flex-1 font-bold"></span></button>
+                    <button id="btn-opt-d" onclick="selectOption('d')" class="w-full text-left p-6 border-2 rounded-2xl transition-all flex items-center gap-6"><span class="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-slate-100 text-slate-500 shrink-0">D</span><span id="opt-d" class="flex-1 font-bold"></span></button>
                 </div>
-                <div class="flex justify-between items-center mt-10">
-                    <button id="prev-btn" onclick="goPrev()" class="bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold shadow-sm hidden transition-colors hover:bg-slate-300">മുമ്പത്തെ</button>
-                    <!-- hidden sm:block added to hide link on very small screens if needed, else mx-auto keeps it centered -->
-                    <button onclick="showReview()" class="text-blue-600 text-[10px] sm:text-xs font-bold underline mx-auto">സബ്മിറ്റ് ഏരിയ</button>
-                    <button id="next-btn" onclick="goNext()" class="blue-gradient text-white px-6 py-3 rounded-xl font-bold shadow-md transition-transform hover:scale-105">അടുത്തത്</button>
+                <div class="flex justify-between items-center pt-6 border-t border-slate-50">
+                    <button id="prev-btn" onclick="goPrev()" class="text-slate-400 font-black text-xs uppercase tracking-widest">← Back</button>
+                    <button id="next-btn" onclick="goNextOrReview()" class="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-sm uppercase">Next</button>
                 </div>
             </div>
 
             <div id="review-screen" class="hidden">
-                <h2 class="font-bold text-slate-800 mb-6 text-center">നിങ്ങളുടെ ഉത്തരങ്ങൾ പരിശോധിക്കുക</h2>
-                <div id="review-list" class="max-h-[350px] overflow-y-auto mb-6 pr-2"></div>
-                <div class="flex gap-4">
-                    <button onclick="goBackToQuiz()" class="w-1/3 bg-slate-200 text-slate-700 p-5 rounded-2xl font-bold shadow-sm transition-colors hover:bg-slate-300">തിരികെ</button>
-                    <button onclick="submitQuiz()" class="w-2/3 blue-gradient text-white p-5 rounded-2xl font-bold shadow-lg transition-transform hover:scale-[1.02]">ഫൈനൽ സബ്മിറ്റ്</button>
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-black text-slate-800 italic uppercase">Review</h2>
+                </div>
+                <div id="review-list" class="space-y-4 mb-10 max-h-[400px] overflow-y-auto pr-2 border rounded-3xl p-4 bg-slate-50/50"></div>
+                <button id="final-submit-btn" onclick="submitResult()" class="w-full bg-emerald-600 text-white p-6 rounded-[1.5rem] font-black text-xl hover:bg-emerald-700 shadow-xl shadow-emerald-100">CONFIRM & SUBMIT</button>
+            </div>
+
+            <div id="student-result-screen" class="hidden">
+                <div class="text-center mb-8">
+                    <h2 class="text-xs font-black text-blue-600 uppercase tracking-widest mb-2">Quiz Result</h2>
+                    <h3 id="sr-name" class="text-2xl font-black text-slate-800 uppercase italic"></h3>
+                    <p id="sr-details" class="text-sm font-bold text-slate-500 mt-1"></p>
+                    <div id="sr-score" class="text-5xl font-black text-blue-600 mt-4 mb-2"></div>
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">TOTAL SCORE</p>
+                </div>
+                <div id="sr-answers-list" class="mb-10 max-h-[450px] overflow-y-auto pr-2"></div>
+                <div class="flex gap-4 no-print">
+                    <button onclick="window.print()" class="w-full bg-blue-100 text-blue-700 p-5 rounded-2xl font-black text-xs uppercase tracking-widest border border-blue-200 hover:bg-blue-200 transition-colors">Print Result</button>
+                    <button onclick="location.reload()" class="w-full bg-slate-900 text-white p-5 rounded-2xl font-black text-xs uppercase tracking-widest">Close Results</button>
                 </div>
             </div>
 
-            <div id="admin-screen" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="font-bold text-blue-900">Admin Control</h2>
+            <div id="finish-screen" class="hidden text-center py-20">
+                <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl font-black mx-auto mb-8">✓</div>
+                <h2 class="text-4xl font-black text-slate-800 italic uppercase mb-4">Done!</h2>
+                <p class="text-slate-500 font-bold mb-12">Your quiz has been submitted. Results will be visible after admin approval.</p>
+                <a href="javascript:location.reload()" class="bg-slate-900 text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em]">Home</a>
+            </div>
+
+            <div id="admin-panel" class="hidden">
+                <div class="mb-6 space-y-4">
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div>
+                            <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Exam Status</h3>
+                            <div class="flex items-center gap-3">
+                                <span id="exam-status-indicator" class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">CLOSED</span>
+                            </div>
+                        </div>
+                        <button id="exam-status-toggle" class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-black uppercase transition-colors">Open Exam</button>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 mt-2">
+                        <div>
+                            <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Access Control</h3>
+                            <p class="text-[10px] text-slate-400 font-bold">Allow any valid formatted number to join (e.g. 91-9999999999)</p>
+                        </div>
+                        <button id="allow-any-toggle" onclick="toggleAllowAnyMobile()" class="bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-xs font-black uppercase transition-colors" data-status="off">OFF (Strict Mode)</button>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-4 mt-2">
+                        <!-- Duration Settings -->
+                        <div class="flex-1 bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-center">
+                            <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider mb-2">Duration Settings</h3>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="admin-duration" placeholder="Min" value="10" class="w-16 p-2 border border-slate-200 rounded outline-none focus:ring-2 focus:ring-blue-500 text-sm text-center">
+                                <span class="text-xs font-bold text-slate-600">min</span>
+                                <button onclick="saveDuration()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors ml-auto">SAVE</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Bulk Questions Upload -->
+                        <div class="flex-[2] bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Upload Questions (Excel)</h3>
+                                <button onclick="downloadQuestionTemplate()" class="text-[10px] text-blue-600 font-bold hover:bg-blue-50 px-2 py-1 rounded transition-colors underline">Template</button>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="file" id="question-upload" accept=".xlsx, .xls" class="flex-1 w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 p-1.5 border border-slate-200 rounded cursor-pointer">
+                                <button id="upload-btn" onclick="uploadQuestions()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors whitespace-nowrap">UPLOAD</button>
+                            </div>
+                            <div class="flex gap-2 flex-wrap mt-3 border-t border-slate-100 pt-3">
+                                <span class="text-[10px] font-bold text-slate-400 self-center">Manual Edit:</span>
+                                <button onclick="openQuestionEditor()" class="bg-slate-100 text-blue-600 px-3 py-1.5 rounded text-[10px] font-bold hover:bg-slate-200 transition-colors">Edit Questions</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Authorized Mobiles Upload -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mt-4 mb-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Authorized Numbers (Excel)</h3>
+                            <button onclick="downloadMobileTemplate()" class="text-[10px] text-emerald-600 font-bold hover:bg-emerald-50 px-2 py-1 rounded transition-colors underline">Template</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="file" id="mobile-upload" accept=".xlsx, .xls" class="flex-1 w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 p-1.5 border border-slate-200 rounded cursor-pointer">
+                            <button id="upload-mobiles-btn" onclick="uploadMobiles()" class="bg-emerald-600 text-white px-4 py-1.5 rounded text-xs font-bold shadow-sm hover:bg-emerald-700 transition-colors whitespace-nowrap">UPLOAD</button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mt-2">
+                        <h2 class="font-black text-2xl uppercase italic">Results (<span id="total-count">0</span>)</h2>
+                        <div class="flex gap-2">
+                            <button onclick="loadResults()" class="p-2 text-blue-600"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+                            <button onclick="downloadExcel()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase">Excel</button>
+                        </div>
+                    </div>
                     <div class="flex gap-2">
-                        <button onclick="loadAdminData(); loadExamStatus();" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-indigo-700 transition-colors">REFRESH</button>
-                        <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-blue-700 transition-colors">HOME</button>
-                        <button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors">EXCEL REPORT</button>
+                        <button onclick="approveAll()" class="flex-2 bg-blue-600 text-white py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-colors w-full">Approve All</button>
+                        <button id="delete-all-btn" onclick="deleteAllResults()" class="flex-1 bg-red-100 text-red-600 py-3 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-200 transition-colors whitespace-nowrap">Delete All</button>
                     </div>
                 </div>
-
-                <div class="flex flex-wrap gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl justify-center mb-6">
-                    <button id="exam-status-btn" onclick="toggleExamStatus()" class="bg-gray-400 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm transition-colors" data-status="loading">LOADING...</button>
-                    <!-- Admin Timer Input -->
-                    <div class="flex items-center gap-2">
-                        <input type="number" id="admin-duration" placeholder="Minutes" class="w-20 p-2 text-xs border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <button onclick="saveDuration()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-blue-700 transition-colors">SAVE TIME</button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mb-6">
-                    <!-- Allowed Mobiles Upload -->
-                    <div class="col-span-1 bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-                            <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Authorized Mobiles (Excel)</h3>
-                            <button onclick="downloadMobilesTemplate()" class="text-[10px] sm:text-xs text-blue-600 font-bold hover:bg-blue-50 px-2 py-1 rounded transition-colors underline">Download Template</button>
-                        </div>
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <input type="file" id="mobile-upload" accept=".xlsx, .xls" class="flex-1 w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 p-1.5 border border-slate-200 rounded cursor-pointer">
-                            <button id="upload-mobiles-btn" onclick="uploadMobiles()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors whitespace-nowrap">UPLOAD</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Questions Upload -->
-                    <div class="col-span-1 bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-                            <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Upload Questions (Excel)</h3>
-                            <button onclick="downloadTemplate()" class="text-[10px] sm:text-xs text-blue-600 font-bold hover:bg-blue-50 px-2 py-1 rounded transition-colors underline">Download Template</button>
-                        </div>
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <input type="file" id="question-upload" accept=".xlsx, .xls" class="flex-1 w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 p-1.5 border border-slate-200 rounded cursor-pointer">
-                            <button id="upload-btn" onclick="uploadQuestions()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors whitespace-nowrap">UPLOAD</button>
-                        </div>
-                    </div>
-                </div>
-
-                <button onclick="approveAll()" class="w-full bg-blue-100 text-blue-700 py-3 rounded-xl mb-6 text-xs font-bold hover:bg-blue-200 transition-colors">APPROVE ALL STUDENTS</button>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto border rounded-2xl bg-slate-50/50">
                     <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-[10px] text-slate-500 border-b border-blue-100 uppercase bg-blue-50/50">
-                                <th class="p-3">Name</th>
-                                <th class="p-3">Mobile</th>
-                                <th class="p-3">Score</th>
-                                <th class="p-3">Status</th>
-                                <th class="p-3">Actions</th>
-                            </tr>
+                        <thead class="bg-white uppercase font-black text-slate-400 text-[9px] border-b">
+                            <tr><th class="p-4">Student</th><th class="p-4">Place</th><th class="p-4">Mobile</th><th class="p-4 text-center">Score</th><th class="p-4">Status</th><th class="p-4"></th></tr>
                         </thead>
-                        <tbody id="admin-table-body"></tbody>
+                        <tbody id="results-body"></tbody>
                     </table>
                 </div>
+                <button onclick="location.reload()" class="mt-8 text-[10px] font-black text-slate-300 uppercase tracking-widest hover:text-red-400">Exit Admin</button>
             </div>
 
-            <div id="finish-screen" class="hidden text-center py-10">
-                <h2 class="text-2xl font-bold text-green-600 mb-4">പരീക്ഷ പൂർത്തിയായി!</h2>
-                <p class="text-slate-600">അഡ്മിൻ അപ്രൂവ് ചെയ്ത ശേഷം നിങ്ങളുടെ മാർക്ക് പരിശോധിക്കാവുന്നതാണ്.</p>
-                <button onclick="location.reload()" class="mt-8 text-blue-600 text-xs font-bold underline">Home</button>
-            </div>
-
-            <div id="student-result-screen" class="hidden text-center py-10">
-                <h2 class="text-2xl font-bold text-blue-800 mb-4">നിങ്ങളുടെ റിസൾട്ട്</h2>
-                <div class="text-6xl font-bold text-blue-600 mb-2" id="student-score-display">0/10</div>
-                <p class="text-slate-600 font-medium mb-6">അഭിനന്ദനങ്ങൾ!</p>
-                
-                <div class="bg-blue-50 p-4 rounded-xl mb-6 text-sm text-left border border-blue-100 shadow-sm w-full">
-                    <p class="mb-2"><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">പേര് (Name):</span> <br><span id="student-result-name" class="text-blue-900 font-bold text-base"></span></p>
-                    <p class="mb-2"><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">മൊബൈൽ (Mobile):</span> <br><span id="student-result-mobile" class="text-blue-900 font-bold text-base tracking-wider"></span></p>
-                    <p><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">സ്ഥലം (Place):</span> <br><span id="student-result-place" class="text-blue-900 font-bold text-base"></span></p>
+            <!-- MANUAL QUESTION EDITOR SCREEN -->
+            <div id="admin-editor-screen" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-black text-slate-800 italic uppercase flex items-center gap-2">
+                        <button onclick="closeAdminEditor()" class="text-slate-400 hover:text-slate-800 transition-colors mr-2">←</button>
+                        Edit <span class="text-blue-600">QUESTIONS</span>
+                    </h2>
+                    <button onclick="addAdminQuestion()" class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-sm border border-indigo-100 hover:bg-indigo-100 transition-colors">+ Add Q</button>
                 </div>
-
-                <div id="student-answers-list" class="max-h-[400px] overflow-y-auto mb-6 pr-2"></div>
-                <!-- We wrap the home button in a flex container so it looks like a nice solid button -->
-                <button onclick="location.reload()" class="w-full bg-slate-200 text-slate-700 p-5 rounded-2xl font-bold shadow-sm transition-colors hover:bg-slate-300">Home</button>
+                
+                <div id="admin-editor-list" class="space-y-4 mb-6 max-h-[500px] overflow-y-auto pr-2 bg-slate-50/50 p-4 border rounded-2xl">
+                    <!-- Populated via JS -->
+                </div>
+                
+                <button id="save-editor-btn" onclick="saveAdminQuestions()" class="w-full bg-blue-600 text-white p-4 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-100 mb-4 transition-all active:scale-95">Save Changes</button>
             </div>
+
         </div>
     </div>
 </body>
