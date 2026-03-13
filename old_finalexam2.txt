@@ -1,0 +1,739 @@
+﻿<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>α┤╡α╡åα┤│α┤┐α┤Üα╡ìα┤Üα┤é α┤▒α┤«α┤ªα┤╛α╡╗ 2026(VR2026) - Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&display=swap');
+        body { font-family: 'Manjari', sans-serif; background-color: #f0f9ff; }
+        .glass { background: rgba(255, 255, 255, 1); border: 1px solid #e0e7ff; }
+        .blue-gradient { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
+        .timer-warning { color: #dc2626; animation: blink 1s linear infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, where, updateDoc, writeBatch, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPHM4eHRhRPyA-JFDXMrbuFIeMvnGByts",
+            authDomain: "velichamsaudionline-66fc0.firebaseapp.com",
+            projectId: "velichamsaudionline-66fc0",
+            storageBucket: "velichamsaudionline-66fc0.firebasestorage.app",
+            messagingSenderId: "414471469839",
+            appId: "1:414471469839:web:d4ad0bd9d8c31dfe85dc7a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const resultsCol = collection(db, "quiz_results");
+        const controlDocRef = doc(db, "quiz_control", "status");
+
+        // CLEANED ALLOWED LIST (With dashes for display/matching)
+        let ALLOWED_MOBILES = [
+            "966-501797382", "966-599122138", "966-557544882", "91-7356160643",
+            "966-576737310", "91-8281539208", "91-6235828844", "966-535768609",
+            "966-505191459", "44-7624376081", "44-7624489327", "61-0401619365",
+            "91-6235928844", "91-6238041679", "91-7025511457", "91-7025785391",
+            "91-7034139883", "91-7034253576", "91-7034399820", "91-7306540074",
+            "91-7558871351", "91-7560956711", "91-7594803054", "91-7902448701",
+            "91-7902470316", "91-7907034843", "91-8129686991", "91-8129764186",
+            "91-8157860261", "91-8304063560", "91-8714267974", "91-8714801835",
+            "91-8848193358", "91-9037267974", "91-9207658678", "91-9496699612",
+            "91-9539360509", "91-9567256340", "91-9629988903", "91-9633035008",
+            "91-9645328773", "91-9645395415", "91-9656912678", "91-9744205385",
+            "91-9745616062", "91-9817111151", "91-9843918413", "91-9847193435",
+            "91-9847302529", "91-9895991116", "91-9900953430", "91-9946050257",
+            "91-9947709622", "965-50905731", "966-500677517", "966-500967745",
+            "966-501154403", "966-501250188", "966-501527780", "966-501534407",
+            "966-502163791", "966-503262990", "966-503679542", "966-503766632",
+            "966-504165135", "966-504186982", "966-504383232", "966-504435135",
+            "966-505332710", "966-505765817", "966-505797935", "966-506729657",
+            "966-506830680", "966-506942737", "966-507177103", "966-508032152",
+            "966-508194715", "966-508222053", "966-508386571", "966-508742148",
+            "966-508815960", "966-508854732", "966-509229487", "966-509262992",
+            "966-509292062", "966-509402136", "966-510360426", "966-530141819",
+            "966-530960342", "966-531894076", "966-532063993", "966-532679687",
+            "966-532796405", "966-532963089", "966-533594582", "966-533689757",
+            "966-534314336", "966-536273182", "966-536296334", "966-536474235",
+            "966-537637215", "966-538531297", "966-539101716", "966-539302907",
+            "966-539867101", "966-540247380", "966-541247266", "966-541632275",
+            "966-541851574", "966-541885929", "966-542099671", "966-543718439",
+            "966-543779651", "966-543820213", "966-545094153", "966-545136406",
+            "966-545442493", "966-545900025", "966-546549197", "966-546678286",
+            "966-546940420", "966-546991610", "966-548420429", "966-549840171",
+            "966-550619441", "966-550989676", "966-551508035", "966-551582755",
+            "966-551758148", "966-551876182", "966-552455305", "966-552465305",
+            "966-552640798", "966-552915784", "966-553602809", "966-554021052",
+            "966-554078961", "966-555069168", "966-556096654", "966-556475906",
+            "966-556857931", "966-558675808", "966-561486272", "966-562129566",
+            "966-562834251", "966-563161829", "966-564843475", "966-564984695",
+            "966-565951942", "966-566780847", "966-567133278", "966-567316632",
+            "966-567596578", "966-567830655", "966-567971022", "966-568258888",
+            "966-569180023", "966-569534791", "966-570173640", "966-570802341",
+            "966-570828420", "966-571918309", "966-572099478", "966-572957971",
+            "966-574359871", "966-574980699", "966-576050581", "966-580591263",
+            "966-581965286", "966-591277136", "966-592598969", "966-595088137",
+            "966-595171618", "966-599215214", "971-524832451", "971-555245457",
+            "971-557424082", "971-561432359", "971-563963407", "971-586655864",
+            "971-588822419", "91-9964946252", "965-99794592", "966-530992783",
+            "966-531458085", "966-534495300", "966-535460233", "966-553382689",
+            "966-554415618", "966-556752858", "966-566443377", "966-571053310",
+            "966-597053063", "91-9633987889", "966-506613574", "966-535821533",
+            "966-548421962", "966-565460233", "966-571472518", "91-7337505186",
+            "966-538451880", "966-562133065", "966-508451880", "966-538024360",
+            "966-531954480", "966-539004619", "966-549295586", "966-564546985",
+            "966-599934246", "91-9447156453"
+        ];
+        let studentData = {};
+        let selections = Array(10).fill(null);
+        let currentQ = 0;
+        let timerInterval = null;
+        let timeLeft = 600; // 10 minutes in seconds
+
+        let questions = [
+            { q: "................ α┤Äα┤¿α╡ìα┤¿α╡üα┤é, ................ α┤Äα┤¿α╡ìα┤¿α╡üα┤é, ................ α┤Äα┤¿α╡ìα┤¿α╡üα┤é α┤ûα╡üα╡╝α┤åα╡╗ α┤«α╡üα┤ûα╡çα┤¿ α┤╕α┤ñα╡ìα┤»α┤é α┤Üα╡åα┤»α╡ìα┤ñα╡ü α┤òα╡èα┤úα╡ìα┤ƒα┤╛α┤úα╡ì α┤àα┤▓α╡ìα┤▓α┤╛α┤╣α╡ü α┤╕α╡éα┤▒α┤ñα╡ìα┤ñα╡ü α┤»α┤╛α┤╕α╡Çα╡╗ α┤åα┤░α┤éα┤¡α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α┤ñα╡ì. α┤ñα┤╛α┤┤α╡å α┤¿α╡╜α┤òα┤┐α┤»α┤╡α┤»α┤┐α╡╜ α┤╡α┤┐α┤ƒα╡ìα┤ƒα┤¡α┤╛α┤ùα┤Öα╡ìα┤Öα┤│α╡ïα┤ƒα╡ì α┤»α╡ïα┤£α┤┐α┤òα╡ìα┤òα┤╛α┤ñα╡ìα┤ñα┤ñα╡ì α┤Åα┤ñα╡ì ?", a: "ΓÇÿα┤»α┤╛α┤╕α╡Çα╡╗ΓÇÖ α┤Äα┤¿α╡ìα┤¿α┤╛α╡╜ α┤àα╡╝α┤ñα╡ìα┤Ñα┤«α┤╛α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α┤ñα╡ì ΓÇÿα┤╣α╡ç, α┤«α┤¿α╡üα┤╖α╡ìα┤»α┤╛ΓÇÖ α┤Äα┤¿α╡ìα┤¿α┤╛α┤úα╡ì", b: "α┤¿α┤¼α┤┐ (α┤╕) α┤àα┤▓α╡ìα┤▓α┤╛α┤╣α╡üα┤╡α┤┐α╡╗α┤▒α╡å α┤▒α┤╕α╡éα┤▓α┤╛α┤úα╡ì", c: "α┤¿α┤¼α┤┐ (α┤╕) α┤╕α╡ìα┤╡α╡Çα┤òα┤░α┤┐α┤Üα╡ìα┤Üα┤┐α┤ƒα╡ìα┤ƒα╡üα┤│α╡ìα┤│ α┤«α┤╛α╡╝α┤ùα┤é α┤»α┤╛α┤ñα╡èα┤░α╡ü α┤╡α┤òα╡ìα┤░α┤ñα┤»α╡üα┤«α┤┐α┤▓α╡ìα┤▓α┤╛α┤ñα╡ìα┤ñ α┤¿α╡çα┤░α┤╛α┤» α┤«α┤╛α╡╝α┤ùα┤«α┤╛α┤úα╡ì", d: "α┤àα┤ñα╡ì (α┤ûα╡üα╡╝α┤åα╡╗) α┤àα┤▓α╡ìα┤▓α┤╛α┤╣α╡ü α┤àα┤╡α┤ñα┤░α┤┐α┤¬α╡ìα┤¬α┤┐α┤Üα╡ìα┤Üα┤ñα╡ì α┤ñα┤¿α╡ìα┤¿α╡åα┤»α┤╛α┤úα╡ì", correct: "a" },
+            { q: "..................... α┤Äα┤¿α╡ìα┤¿α╡ü α┤¬α┤▒α┤₧α╡ìα┤₧α┤ñα┤┐α╡╗α┤▒α╡å α┤ëα┤ªα╡ìα┤ªα╡çα┤╢α┤é, α┤«α╡çα┤▓α┤┐α╡╜ α┤╣α╡âα┤ªα┤»α┤¬α┤░α┤┐α┤╡α╡╝α┤ñα╡ìα┤ñα┤¿α┤é α┤╡α┤¿α╡ìα┤¿α╡ì α┤¿α┤¿α╡ìα┤¿α┤╛α┤»α┤┐α┤ñα╡ìα┤ñα╡Çα┤░α╡üα┤╡α┤╛α╡╗ α┤«α┤╛α╡╝α┤ùα┤«α┤┐α┤▓α╡ìα┤▓α┤╛α┤ñα╡ìα┤ñα┤╡α┤┐α┤ºα┤é α┤àα┤╡α┤░α╡üα┤ƒα╡å α┤╣α╡âα┤ªα┤»α┤Öα╡ìα┤Öα╡╛ α┤ªα╡éα┤╖α┤┐α┤Üα╡ìα┤Üα╡üα┤¬α╡ïα┤»α┤┐α┤ƒα╡ìα┤ƒα╡üα┤úα╡ìα┤ƒα╡åα┤¿α╡ìα┤¿α╡üα┤é, α┤àα┤ñα┤┐α┤¿α┤╛α╡╜ α┤╢α┤┐α┤òα╡ìα┤╖α┤»α╡å α┤╕α┤éα┤¼α┤¿α╡ìα┤ºα┤┐α┤Üα╡ìα┤Ü α┤ñα┤╛α┤òα╡ìα┤òα╡Çα┤ñα╡ü α┤àα┤╡α┤░α┤┐α╡╜ α┤¼α┤╛α┤ºα┤òα┤«α┤╛α┤»α┤┐α┤òα╡ìα┤òα┤┤α┤┐α┤₧α╡ìα┤₧α┤┐α┤ƒα╡ìα┤ƒα╡üα┤úα╡ìα┤ƒα╡åα┤¿α╡ìα┤¿α╡üα┤é α┤åα┤òα╡üα┤¿α╡ìα┤¿α╡ü.", a: "α┤Äα┤¿α┤┐ α┤àα┤╡α╡╝ α┤╡α┤┐α┤╢α╡ìα┤╡α┤╕α┤┐α┤òα╡ìα┤òα╡üα┤òα┤»α┤┐α┤▓α╡ìα┤▓ (┘ü┘Ä┘ç┘Å┘à┘Æ ┘ä┘Ä╪º ┘è┘Å╪ñ┘Æ┘à┘É┘å┘Å┘ê┘å┘Ä)", b: "α┤╡α┤╛α┤òα╡ìα┤òα╡ü α┤╕α╡ìα┤Ñα┤┐α┤░α┤¬α╡ìα┤¬α╡åα┤ƒα╡ìα┤ƒα╡ü (╪¡┘Ä┘é┘æ┘Ä ╪º┘ä┘Æ┘é┘Ä┘ê┘Æ┘ä┘Å)", c: "α┤àα┤ñα┤┐α┤¿α┤╛α╡╜ α┤àα┤╡α╡╝ α┤àα┤╢α╡ìα┤░α┤ªα╡ìα┤ºα┤░α┤╛α┤úα╡ì (┘ü┘Ä┘ç┘Å┘à┘Æ ╪║┘Ä╪º┘ü┘É┘ä┘Å┘ê┘å┘Ä)", d: "α┤àα┤╡α┤░α┤┐α╡╜ α┤╕α┤«α┤«α┤╛α┤úα╡ì (╪│┘Ä┘ê┘Ä╪º╪í┘î ╪╣┘Ä┘ä┘Ä┘è┘Æ┘ç┘É┘à┘Æ)", correct: "b" },
+            { q: "α┤å α┤«α╡üα┤╢α╡ìΓÇîα┤░α┤┐α┤òα╡ìα┤òα╡üα┤òα┤│α╡å α┤ñα┤╛α┤òα╡ìα┤òα╡Çα┤ñα╡ü α┤Üα╡åα┤»α╡ìα┤ñα┤╛α┤▓α╡üα┤é α┤çα┤▓α╡ìα┤▓α╡åα┤Öα╡ìα┤òα┤┐α┤▓α╡üα┤é α┤òα┤╛α┤░α╡ìα┤»α┤«α┤┐α┤▓α╡ìα┤▓, α┤àα┤╡α╡╝ α┤╡α┤┐α┤╢α╡ìα┤╡α┤╕α┤┐α┤òα╡ìα┤òα┤┐α┤▓α╡ìα┤▓. α┤òα┤╛α┤░α┤úα┤é α┤àα┤╡α┤░α╡üα┤ƒα╡å α┤╣α╡âα┤ªα┤»α┤é α┤àα┤ñα╡ìα┤░α┤ñα╡ìα┤ñα╡ïα┤│α┤é α┤òα┤áα┤┐α┤¿α┤«α┤╛α┤»α┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α╡ü. α┤çα┤ñα╡ì α┤╡α╡ìα┤»α┤òα╡ìα┤ñα┤«α┤╛α┤òα╡ìα┤òα┤╛α╡╗ α┤àα┤▓α╡ìα┤▓α┤╛α┤╣α╡ü α┤¬α┤▒α┤»α╡üα┤¿α╡ìα┤¿ α┤ëα┤¬α┤«α┤òα┤│α┤┐α╡╜ α┤¿α┤┐α┤¿α╡ìα┤¿α╡üα┤é α┤Üα┤┐α┤▓ α┤¬α╡ìα┤░α┤»α╡ïα┤ùα┤Öα╡ìα┤Öα┤│α╡å α┤ñα┤╛α┤┤α╡å α┤¿α╡╜α┤òα╡üα┤¿α╡ìα┤¿α╡ü, α┤àα┤╡α┤»α┤┐α╡╜ α┤¬α╡åα┤ƒα┤╛α┤ñα╡ìα┤ñα┤ñα╡ì α┤Åα┤ñα╡ì?", a: "α┤òα┤┤α╡üα┤ñα╡ìα┤ñα╡üα┤òα┤│α┤┐α╡╜ α┤ñα┤╛α┤ƒα┤┐α┤»α╡åα┤▓α╡ìα┤▓α╡üα┤òα╡╛ α┤╡α┤░α╡åα┤»α╡üα┤│α╡ìα┤│ α┤åα┤«α┤Öα╡ìα┤Öα╡╛ α┤Åα╡╝α┤¬α╡ìα┤¬α╡åα┤ƒα╡üα┤ñα╡ìα┤ñα┤┐", b: "α┤àα┤ñα┤┐α┤¿α┤╛α╡╜ α┤àα┤╡α╡╝ α┤ñα┤▓α┤¬α╡èα┤òα╡ìα┤òα┤¬α╡ìα┤¬α╡åα┤ƒα╡ìα┤ƒα┤╡α┤░α┤╛α┤òα╡üα┤¿α╡ìα┤¿α╡ü", c: "α┤«α╡üα┤«α╡ìα┤¬α┤┐α╡╜ α┤Æα┤░α╡ü α┤ñα┤ƒα┤╡α╡üα┤é α┤¬α┤┐α┤«α╡ìα┤¬α┤┐α╡╜ α┤Æα┤░α╡ü α┤ñα┤ƒα┤╡α╡üα┤é α┤¿α╡╜α┤òα┤┐ α┤àα┤╡α┤░α╡å α┤«α╡éα┤ƒα┤┐α┤»α┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α╡ü", d: "α┤àα┤ñα┤┐α┤¿α┤╛α╡╜ α┤àα┤╡α╡╝ α┤àα┤¿α╡üα┤╕α┤░α┤úα┤»α╡üα┤│α╡ìα┤│α┤╡α┤░α┤╛α┤úα╡ì", correct: "d" },
+            { q: "α┤Æα┤░α┤╛α┤│α╡èα┤░α╡ü α┤¿α┤▓α╡ìα┤▓ α┤¿α┤ƒα┤¬α┤ƒα┤┐ α┤òα╡ìα┤░α┤«α┤é α┤¿α┤ƒα┤¬α╡ìα┤¬α┤┐α┤▓α┤╛α┤òα╡ìα┤òα┤┐α┤»α┤╛α╡╜ α┤àα┤»α┤╛α╡╛α┤òα╡ìα┤òα╡ì α┤▓α┤¡α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿ α┤¬α╡ìα┤░α┤ñα┤┐α┤½α┤▓α┤«α┤╛α┤»α┤┐ α┤¼α┤¿α╡ìα┤ºα┤¬α╡ìα┤¬α╡åα┤ƒα╡ìα┤ƒα╡ì α┤╢α┤░α┤┐α┤»α┤╛α┤»α┤ñα╡ì ..........", a: "α┤àα┤╡α┤¿α╡ìα┤¿α╡ü α┤àα┤ñα┤┐α╡╗α┤▒α╡å α┤¬α╡ìα┤░α┤ñα┤┐α┤½α┤▓α┤«α╡üα┤úα╡ìα┤ƒα╡ì", b: "α┤àα┤╡α┤¿α╡ìα┤¿α╡ü α┤╢α╡çα┤╖α┤é α┤àα┤ñα┤¿α╡üα┤╕α┤░α┤┐α┤Üα╡ìα┤Üα╡ì α┤¬α╡ìα┤░α┤╡α╡╝α┤ñα╡ìα┤ñα┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α┤╡α┤░α╡üα┤ƒα╡å α┤¬α╡ìα┤░α┤ñα┤┐α┤½α┤▓α┤╡α╡üα┤«α╡üα┤úα╡ìα┤ƒα╡ì", c: "α┤àα┤╡α┤░α╡üα┤ƒα╡å α┤¬α╡ìα┤░α┤ñα┤┐α┤½α┤▓α┤Öα╡ìα┤Öα┤│α┤┐α╡╜ α┤Æα┤ƒα╡ìα┤ƒα╡üα┤é α┤òα╡üα┤▒α┤╡α╡ì α┤╡α┤░α┤╛α┤ñα╡åα┤ñα┤¿α╡ìα┤¿α╡å α┤àα┤╡α┤¿α╡ìα┤¿α╡ü α┤¬α╡ìα┤░α┤ñα┤┐α┤½α┤▓α┤é α┤ëα┤úα╡ìα┤ƒα┤╛α┤»α┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤é", d: "α┤Äα┤▓α╡ìα┤▓α┤╛α┤é α┤╢α┤░α┤┐α┤»α┤╛α┤úα╡ì", correct: "d" },
+            { q: "α┤ªα╡éα┤ñα┤¿α╡ìα┤«α┤╛α┤░α╡å α┤òα┤│α╡ìα┤│α┤╡α┤╛α┤òα╡ìα┤òα┤┐α┤» α┤£α┤¿α┤ñα┤»α╡üα┤ƒα╡å α┤Æα┤░α╡ü α┤¬α╡ìα┤░α┤╕α╡ìα┤ñα┤╛α┤╡α┤¿α┤»α┤╛α┤úα╡ì; \"...................... α╡╜ α┤¿α┤┐α┤¿α╡ìα┤¿α╡ì α┤¿α┤┐α┤Öα╡ìα┤Öα╡╛α┤òα╡ìα┤òα╡ì α┤ñα╡Çα╡╝α┤Üα╡ìα┤Üα┤»α┤╛α┤»α╡üα┤é α┤╡α╡çα┤ªα┤¿α┤»α╡çα┤▒α┤┐α┤» α┤╢α┤┐α┤òα╡ìα┤╖ α┤¼α┤╛α┤ºα┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α┤ñα┤╛α┤úα╡ì\". α┤çα┤╡α┤┐α┤ƒα╡å α┤╡α┤┐α┤ƒα╡ìα┤ƒα┤¡α┤╛α┤ùα┤ñα╡ìα┤ñα╡ì α┤ëα┤ªα╡ìα┤ªα╡çα┤╢α┤┐α┤Üα╡ìα┤Üα┤ñα╡ì α┤åα┤░α╡åα┤»α┤╛α┤úα╡ì?", a: "α┤àα┤▓α╡ìα┤▓α┤╛α┤╣α╡üα┤╡α┤┐α╡╜ α┤¿α┤┐α┤¿α╡ìα┤¿α╡ì", b: "α┤å α┤£α┤¿α┤ñα┤»α┤┐α╡╜ α┤¿α┤┐α┤¿α╡ìα┤¿α╡ì", c: "α┤½α┤┐α╡╝α┤öα┤¿α┤┐α╡╜ α┤¿α┤┐α┤¿α╡ìα┤¿α╡ì", d: "α┤╕α╡ìα┤╡α┤╛α┤▓α┤┐α┤╣α╡ü (α┤à) α┤¿α┤¼α┤┐α┤»α╡üα┤ƒα╡å α┤£α┤¿α┤ñα┤»α┤┐α╡╜ α┤¿α┤┐α┤¿α╡ìα┤¿α╡ì", correct: "b" },
+            { q: "α┤¬α┤ƒα╡ìα┤ƒα┤úα┤ñα╡ìα┤ñα┤┐α╡╗α┤▒α╡å α┤àα┤Öα╡ìα┤Öα╡ç α┤àα┤▒α╡ìα┤▒α┤ñα╡ìα┤ñα╡ü α┤¿α┤┐α┤¿α╡ìα┤¿α╡ì α┤ôα┤ƒα┤┐ α┤╡α┤¿α╡ìα┤¿ α┤«α┤¿α╡üα┤╖α╡ìα┤»α╡╗ α┤å α┤£α┤¿α┤ñα┤»α╡ïα┤ƒα╡ì α┤ëα┤¬α┤ªα╡çα┤╢α┤┐α┤Üα╡ìα┤Ü α┤Üα┤┐α┤▓ α┤╡α┤╛α┤òα╡ìα┤»α┤Öα╡ìα┤Öα┤│α╡å α┤¿α╡╜α┤òα╡üα┤¿α╡ìα┤¿α╡ü. α┤Æα┤¿α╡ìα┤¿α╡ì α┤àα┤╡α┤»α┤┐α╡╜ α┤¬α╡åα┤ƒα╡üα┤¿α╡ìα┤¿α┤┐α┤▓α╡ìα┤▓, α┤Åα┤ñα╡ì?", a: "α┤àα┤╡α┤¿α╡ìα┤¿α╡ü α┤¬α╡üα┤▒α┤«α╡å α┤╡α┤▓α╡ìα┤▓ α┤ªα╡êα┤╡α┤Öα╡ìα┤Öα┤│α╡åα┤»α╡üα┤é α┤₧α┤╛α╡╗ α┤╕α╡ìα┤╡α╡Çα┤òα┤░α┤┐α┤òα╡ìα┤òα╡üα┤òα┤»α╡ï?", b: "α┤Äα╡╗α┤▒α╡å α┤£α┤¿α┤Öα╡ìα┤Öα╡╛ α┤àα┤▒α┤┐α┤₧α╡ìα┤₧α┤┐α┤░α╡üα┤¿α╡ìα┤¿α╡üα┤╡α╡åα┤Öα╡ìα┤òα┤┐α╡╜ α┤¿α┤¿α╡ìα┤¿α┤╛α┤»α╡çα┤¿α╡å", c: "α┤Äα┤¿α╡ìα┤¿α╡å α┤╕α╡âα┤╖α╡ìα┤ƒα┤┐α┤Üα╡ìα┤Üα╡üα┤úα╡ìα┤ƒα┤╛α┤òα╡ìα┤òα┤┐α┤»α┤╡α┤¿α╡å α┤₧α┤╛α╡╗ α┤åα┤░α┤╛α┤ºα┤¿ α┤Üα╡åα┤»α╡ìα┤»α┤╛α┤ñα┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤╡α┤╛α╡╗ α┤Äα┤¿α┤┐α┤òα╡ìα┤òα╡ì α┤Äα┤¿α╡ìα┤ñα┤╛α┤úα╡ì α┤ñα┤ƒα┤╕α╡ìα┤╕α┤é", d: "α┤¿α┤┐α┤╢α╡ìα┤Üα┤»α┤«α┤╛α┤»α╡üα┤é α┤₧α┤╛α╡╗ α┤¿α┤┐α┤Öα╡ìα┤Öα┤│α╡üα┤ƒα╡å α┤░α┤òα╡ìα┤╖α┤┐α┤ñα┤╛α┤╡α┤┐α╡╜ α┤╡α┤┐α┤╢α╡ìα┤╡α┤╕α┤┐α┤Üα╡ìα┤Üα┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α╡ü", correct: "b" },
+            { q: "α┤å α┤£α┤¿α┤ñα┤»α╡å α┤àα┤▓α╡ìα┤▓α┤╛α┤╣α╡ü α┤╡α┤«α╡ìα┤¬α┤┐α┤Üα╡ìα┤Ü α┤╢α┤┐α┤òα╡ìα┤╖ α┤«α╡éα┤▓α┤é α┤¿α┤╢α┤┐α┤¬α╡ìα┤¬α┤┐α┤òα╡ìα┤òα┤╛α┤¿α╡üα┤│α╡ìα┤│ α┤òα┤╛α┤░α┤úα┤é α┤Äα┤¿α╡ìα┤ñα┤╛α┤»α┤┐α┤░α╡üα┤¿α╡ìα┤¿α╡ü?", a: "α┤àα┤╡α┤░α┤┐α┤▓α╡çα┤òα╡ìα┤òα╡ì α┤╡α┤¿α╡ìα┤¿ α┤ªα╡éα┤ñα┤¿α╡ìα┤«α┤╛α┤░α╡å α┤òα┤▓α╡ìα┤▓α╡åα┤▒α┤┐α┤₧α╡ìα┤₧α╡ü α┤òα╡èα┤▓α╡ìα┤▓α╡üα┤«α╡åα┤¿α╡ìα┤¿α╡ì α┤¡α╡Çα┤╖α┤úα┤┐α┤¬α╡ìα┤¬α╡åα┤ƒα╡üα┤ñα╡ìα┤ñα┤┐", b: "α┤åα┤ªα╡ìα┤» α┤░α┤úα╡ìα┤ƒα╡ü α┤ªα╡éα┤ñα┤¿α╡ìα┤«α┤╛α┤░α╡å α┤àα┤╡α╡╝ α┤åα┤ªα╡ìα┤»α┤«α╡ç α┤òα╡èα┤¿α╡ìα┤¿α╡ü α┤òα┤│α┤₧α╡ìα┤₧α╡ü", c: "α┤¬α┤ƒα╡ìα┤ƒα┤úα┤ñα╡ìα┤ñα┤┐α┤▓α╡å α┤àα┤Öα╡ìα┤Öα╡ç α┤àα┤▒α╡ìα┤▒α┤ñα╡ìα┤ñα┤┐α╡╜ α┤¿α┤┐α┤¿α╡ìα┤¿α╡üα┤é α┤ôα┤ƒα┤┐ α┤╡α┤¿α╡ìα┤¿ α┤«α╡éα┤¿α╡ìα┤¿α┤╛α┤«α┤ñα╡ìα┤ñα╡å α┤ªα╡éα┤ñα┤¿α╡å α┤åα┤òα╡ìα┤░α┤«α┤┐α┤Üα╡ìα┤Üα╡ü", d: "α┤àα┤╡α┤░α┤┐α┤▓α╡çα┤òα╡ìα┤òα╡ì α┤╡α┤¿α╡ìα┤¿ α┤ªα╡éα┤ñα┤¿α╡ìα┤«α┤╛α┤░α╡å α┤ºα┤┐α┤òα╡ìα┤òα┤░α┤┐α┤òα╡ìα┤òα╡üα┤òα┤»α╡üα┤é α┤ëα┤¬α┤ªα╡çα┤╖α╡ìα┤ƒα┤╛α┤╡α┤┐α┤¿α╡å α┤åα┤òα╡ìα┤░α┤«α┤┐α┤òα╡ìα┤òα╡üα┤òα┤»α╡üα┤é α┤Üα╡åα┤»α╡ìα┤ñα╡ü", correct: "d" },
+            { q: "\"α┤Äα┤▓α╡ìα┤▓α┤╛ α┤çα┤úα┤╡α╡╝α┤ùα╡ìα┤ùα┤Öα╡ìα┤Öα┤│α╡åα┤»α╡üα┤é α┤╕α╡âα┤╖α╡ìα┤ƒα┤┐α┤Üα╡ìα┤Üα┤┐α┤ƒα╡ìα┤ƒα╡üα┤│α╡ìα┤│α┤╡α╡╗ α┤«α┤╣α┤╛ α┤¬α┤░α┤┐α┤╢α╡üα┤ªα╡ìα┤ºα┤¿α┤ñα╡ìα┤░α╡å\"; α┤╡α┤Üα┤¿α┤ñα╡ìα┤ñα┤┐α╡╜ α┤╡α┤¿α╡ìα┤¿α┤┐α┤ƒα╡ìα┤ƒα┤┐α┤▓α╡ìα┤▓α┤╛α┤ñα╡ìα┤ñα┤ñα╡ì α┤Åα┤ñα╡ì?", a: "α┤¡α╡éα┤«α┤┐ α┤ëα╡╜α┤¬α┤╛α┤ªα┤┐α┤¬α╡ìα┤¬α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α┤ñα┤┐α╡╜ α┤¿α┤┐α┤¿α╡ìα┤¿α╡ì", b: "α┤àα┤╡α┤░α╡üα┤ƒα╡å α┤ªα╡çα┤╣α┤Öα╡ìα┤Öα┤│α┤┐α╡╜ α┤¿α┤┐α┤¿α╡ìα┤¿α╡ì", c: "α┤àα┤╡α╡╝α┤òα╡ìα┤òα╡ì α┤àα┤▒α┤┐α┤»α╡üα┤¿α╡ìα┤¿α┤╡α┤»α┤┐α╡╜α┤¿α┤┐α┤¿α╡ìα┤¿α╡ì", d: "α┤àα┤╡α╡╝α┤òα╡ìα┤òα╡ì α┤àα┤▒α┤┐α┤₧α╡ìα┤₧α╡üα┤òα╡éα┤ƒα┤╛α┤ñα╡ìα┤ñα┤╡α┤»α┤┐α╡╜ α┤¿α┤┐α┤¿α╡ìα┤¿α╡ì", correct: "c" },
+            { q: "α┤╕α╡éα┤░α╡ìα┤»α┤¿α╡üα┤é α┤Üα┤¿α╡ìα┤ªα╡ìα┤░α┤¿α╡üα┤é α┤¡α╡éα┤«α┤┐α┤»α╡üα┤é α┤░α┤╛α┤╡α╡üα┤é α┤¬α┤òα┤▓α╡üα┤é α┤Äα┤▓α╡ìα┤▓α┤╛α┤é α┤¼α╡üα┤ªα╡ìα┤ºα┤┐ α┤╡α╡╝α┤ùα╡ìα┤ùα┤ñα╡ìα┤ñα╡åα┤¬α╡ìα┤¬α╡ïα┤▓α╡å α┤àα┤ñα╡ìα┤ñα┤ñα┤┐α╡╗α┤▒α╡å α┤Üα┤▓α┤¿α┤Öα╡ìα┤Öα╡╛ α┤¿α┤┐α╡╝α┤╡α┤╣α┤┐α┤Üα╡ìα┤Üα╡ü α┤òα╡èα┤úα╡ìα┤ƒα┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α╡ü α┤Äα┤¿α╡ìα┤¿α╡ì α┤╕α╡éα┤Üα┤¿ α┤¿α╡╜α┤òα╡üα┤¿α╡ìα┤¿ α┤╡α┤Üα┤¿ α┤¡α┤╛α┤ùα┤é α┤Åα┤ñα╡ì ?", a: "┘ê┘Ä╪º┘ä╪┤┘æ┘Ä┘à┘Æ╪│┘Å ╪¬┘Ä╪¼┘Æ╪▒┘É┘è ┘ä┘É┘à┘Å╪│┘Æ╪¬┘Ä┘é┘Ä╪▒┘æ┘ì ┘ä┘æ┘Ä┘ç┘Ä╪º α┤╕α╡éα┤░α╡ìα┤»α╡╗ α┤àα┤ñα┤┐α╡╗α┤▒α╡å α┤Æα┤░α╡ü α┤ñα┤╛α┤╡α┤│α┤ñα╡ìα┤ñα┤┐α┤▓α╡çα┤òα╡ìα┤òα╡ü α┤Üα┤▓α┤┐α┤Üα╡ìα┤Üα╡ü α┤òα╡èα┤úα╡ìα┤ƒα┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α╡ü", b: "┘ä┘Ä╪º ╪º┘ä╪┤┘æ┘Ä┘à┘Æ╪│┘Å ┘è┘Ä┘å╪¿┘Ä╪║┘É┘è ┘ä┘Ä┘ç┘Ä╪º ╪ú┘Ä┘å ╪¬┘Å╪»┘Æ╪▒┘É┘â┘Ä ╪º┘ä┘Æ┘é┘Ä┘à┘Ä╪▒┘Ä α┤╕α╡éα┤░α╡ìα┤»α┤¿α┤╛α┤òα┤ƒα╡ìα┤ƒα╡å α┤àα┤ñα┤┐α┤¿α╡ì α┤Üα┤¿α╡ìα┤ªα╡ìα┤░α┤¿α╡å α┤¬α╡ìα┤░α┤╛α┤¬α┤┐α┤òα╡ìα┤òα╡üα┤╡α┤╛α╡╗ α┤¬α┤▒α╡ìα┤▒α╡üα┤òα┤»α┤┐α┤▓α╡ìα┤▓", c: "┘ê┘Ä┘ä┘Ä╪º ╪º┘ä┘ä┘æ┘Ä┘è┘Æ┘ä┘Å ╪│┘Ä╪º╪¿┘É┘é┘Å ╪º┘ä┘å┘æ┘Ä┘ç┘Ä╪º╪▒┘É α┤░α┤╛α┤ñα╡ìα┤░α┤┐ α┤¬α┤òα┤▓α┤┐α┤¿α╡å α┤«α╡üα╡╗α┤òα┤ƒα┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α┤ñα╡üα┤«α┤▓α╡ìα┤▓", d: "┘ê┘Ä┘â┘Å┘ä┘æ┘î ┘ü┘É┘è ┘ü┘Ä┘ä┘Ä┘â┘ì ┘è┘Ä╪│┘Æ╪¿┘Ä╪¡┘Å┘ê┘å┘Ä α┤Äα┤▓α╡ìα┤▓α┤╛α┤é α┤ôα┤░α╡ï α┤╕α┤₧α╡ìα┤Üα┤╛α┤░ α┤«α┤úα╡ìα┤íα┤▓α┤ñα╡ìα┤ñα┤┐α╡╜ α┤¿α╡Çα┤¿α╡ìα┤ñα┤┐ α┤òα╡èα┤úα╡ìα┤ƒα┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α╡ü.", correct: "d" },
+            { q: "α┤«α╡üα╡╗α┤╕α┤«α╡üα┤ªα┤╛α┤»α┤Öα╡ìα┤Öα╡╛α┤òα╡ìα┤òα╡ì α┤¼α┤╛α┤ºα┤┐α┤Üα╡ìα┤Üα┤ñα╡ü α┤¬α╡ïα┤▓α╡åα┤»α╡üα┤│α╡ìα┤│ α┤Éα┤╣α┤┐α┤ò α┤╢α┤┐α┤òα╡ìα┤╖α┤òα┤│α╡å α┤¿α┤┐α┤Öα╡ìα┤Öα╡╛ α┤╕α╡éα┤òα╡ìα┤╖α┤┐α┤òα╡ìα┤òα┤úα┤é, α┤╡α┤░α┤╛α┤¿α┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿ α┤¬α┤░α┤▓α╡ïα┤ò α┤╢α┤┐α┤òα╡ìα┤╖α┤»α╡åα┤»α╡üα┤é α┤¿α┤┐α┤Öα╡ìα┤Öα╡╛ α┤╕α╡éα┤òα╡ìα┤╖α┤┐α┤òα╡ìα┤òα┤úα┤é, α┤Äα┤¿α╡ìα┤¿α┤╛α╡╜ α┤¿α┤┐α┤Öα╡ìα┤Öα╡╛ ................", a: "α┤╕α╡éα┤òα╡ìα┤╖α╡ìα┤«α┤ñα┤»α╡üα┤│α╡ìα┤│α┤╡α┤░α┤╛α┤»α╡çα┤òα╡ìα┤òα┤╛α┤é", b: "α┤╡α┤┐α┤£α┤»α┤┐α┤òα┤│α┤╛α┤»α╡çα┤òα╡ìα┤òα┤╛α┤é", c: "α┤òα┤░α╡üα┤ú α┤Üα╡åα┤»α╡ìα┤»α┤¬α╡ìα┤¬α╡åα┤ƒα╡ìα┤ƒα╡çα┤òα╡ìα┤òα┤╛α┤é", d: "α┤¿α╡çα╡╝α┤╡α┤┤α┤┐ α┤òα┤╛α┤úα┤┐α┤òα╡ìα┤òα┤¬α╡ìα┤¬α╡åα┤ƒα╡ìα┤ƒα╡çα┤òα╡ìα┤òα┤╛α┤é", correct: "c" }
+        ];
+
+        window.renderStudentAnswers = (docData) => {
+            const container = document.getElementById('student-answers-list');
+            if(container) {
+                container.innerHTML = questions.map((q, i) => {
+                    const selected = docData.selections[i];
+                    const isCorrect = selected === q.correct;
+                    const optLetter = selected ? selected.toUpperCase() : 'N/A';
+                    const optText = selected && q[selected] ? q[selected] : 'α┤ëα┤ñα╡ìα┤ñα┤░α┤é α┤¿α╡╜α┤òα┤┐α┤»α┤┐α┤ƒα╡ìα┤ƒα┤┐α┤▓α╡ìα┤▓';
+                    
+                    return `
+                    <div class="p-4 bg-white rounded-lg mb-3 border ${isCorrect ? 'border-green-200' : 'border-red-200'} shadow-sm text-left">
+                        <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
+                        <p class="text-xs mt-2 ${isCorrect ? 'text-green-700' : 'text-red-700'} font-semibold">
+                            α┤¿α┤┐α┤Öα╡ìα┤Öα┤│α╡üα┤ƒα╡å α┤ëα┤ñα╡ìα┤ñα┤░α┤é: ${optLetter}. ${optText}
+                            ${isCorrect ? ' <span class="text-green-500 ml-1">Γ£ô</span>' : ' <span class="text-red-500 ml-1">Γ£ù</span>'}
+                        </p>
+                        ${!isCorrect ? `<p class="text-xs mt-1 text-green-700 font-semibold">α┤╢α┤░α┤┐α┤»α┤╛α┤» α┤ëα┤ñα╡ìα┤ñα┤░α┤é: ${q.correct.toUpperCase()}. ${q[q.correct]}</p>` : ''}
+                    </div>
+                    `;
+                }).join('');
+            }
+        };
+
+        window.startTimer = () => {
+            const timerDisplay = document.getElementById('timer-display');
+            let startTime = localStorage.getItem('tlj_finalexam_start');
+            if (!startTime) {
+                startTime = Date.now();
+                localStorage.setItem('tlj_finalexam_start', startTime);
+            } else {
+                startTime = parseInt(startTime, 10);
+            }
+
+            const updateTimer = () => {
+                const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                timeLeft = Math.max(0, 600 - elapsedSeconds); // 10 minutes = 600 seconds
+                
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 60) {
+                    timerDisplay.classList.add('timer-warning');
+                    timerDisplay.parentElement.classList.replace('bg-blue-100', 'bg-red-100');
+                    timerDisplay.parentElement.classList.replace('text-blue-800', 'text-red-800');
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert("α┤╕α┤«α┤»α┤é α┤òα┤┤α┤┐α┤₧α╡ìα┤₧α╡ü! α┤¿α┤┐α┤Öα╡ìα┤Öα┤│α╡üα┤ƒα╡å α┤ëα┤ñα╡ìα┤ñα┤░α┤Öα╡ìα┤Öα╡╛ α┤ôα┤ƒα╡ìα┤ƒα╡ïα┤«α┤╛α┤▒α╡ìα┤▒α┤┐α┤òα╡ìα┤òα┤╛α┤»α┤┐ α┤╕α┤¼α╡ìα┤«α┤┐α┤▒α╡ìα┤▒α╡ì α┤Üα╡åα┤»α╡ìα┤»α┤¬α╡ìα┤¬α╡åα┤ƒα╡üα┤¿α╡ìα┤¿α╡ü.");
+                    submitQuiz(true); // force submit
+                }
+            };
+
+            updateTimer(); // Call immediately
+            timerInterval = setInterval(updateTimer, 1000);
+        };
+
+        window.startQuiz = async () => {
+            const name = document.getElementById('name').value.trim();
+            const place = document.getElementById('place').value.trim();
+            const mobile = document.getElementById('mobile').value.trim();
+
+            try { await signInAnonymously(auth); } catch (e) { console.error("Auth error", e); }
+
+            // Fetch Authorized Mobiles from DB
+            try {
+                const mobilesSnap = await getDoc(doc(db, "quiz_control", "allowed_mobiles"));
+                if (mobilesSnap.exists() && mobilesSnap.data().mobiles?.length > 0) {
+                    ALLOWED_MOBILES = mobilesSnap.data().mobiles;
+                }
+            } catch (err) {
+                console.error("Error fetching allowed mobiles", err);
+            }
+
+            if(!ALLOWED_MOBILES.includes(mobile)) {
+                return alert("α┤ê α┤«α╡èα┤¼α╡êα╡╜ α┤¿α┤«α╡ìα┤¬α┤▒α┤┐α┤¿α╡ì α┤¬α╡ìα┤░α┤╡α╡çα┤╢α┤¿α┤«α┤┐α┤▓α╡ìα┤▓. α┤ªα┤»α┤╡α┤╛α┤»α┤┐ α┤▓α┤┐α┤╕α╡ìα┤▒α╡ìα┤▒α┤┐α┤▓α╡üα┤│α╡ìα┤│ α┤½α╡ïα╡╝α┤«α┤╛α┤▒α╡ìα┤▒α┤┐α╡╜ α┤ñα┤¿α╡ìα┤¿α╡å α┤¿α┤«α╡ìα┤¬α╡╝ α┤¿α╡╜α┤òα╡üα┤ò (α┤ëα┤ªα┤╛α┤╣α┤░α┤úα┤é: 91-7034253576).");
+            }
+            
+            // save to cache once validated
+            localStorage.setItem('tlj_student', JSON.stringify({ name, place, raw_mobile: document.getElementById('mobile').value }));
+
+            let qSnap;
+            try {
+                qSnap = await getDocs(query(resultsCol, where("mobile", "==", mobile)));
+            } catch (err) {
+                console.error("DB error fetching previously saved:", err);
+                return alert("α┤¿α╡åα┤▒α╡ìα┤▒α╡ìΓÇîα┤╡α╡╝α┤òα╡ìα┤òα╡ì α┤¬α╡ìα┤░α┤╢α╡ìΓÇîα┤¿α┤é α┤òα┤╛α┤░α┤úα┤é α┤¬α╡ìα┤░α┤╡α╡çα┤╢α┤┐α┤òα╡ìα┤òα┤╛α╡╗ α┤╕α┤╛α┤ºα┤┐α┤Üα╡ìα┤Üα┤┐α┤▓α╡ìα┤▓. α┤ªα┤»α┤╡α┤╛α┤»α┤┐ α┤╡α╡Çα┤úα╡ìα┤ƒα╡üα┤é α┤╢α╡ìα┤░α┤«α┤┐α┤òα╡ìα┤òα╡üα┤ò.");
+            }
+
+            if(!qSnap.empty) {
+                const docData = qSnap.docs[0].data();
+                if (docData.approved) {
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('student-result-screen').classList.remove('hidden');
+                    document.getElementById('student-score-display').innerText = `${docData.score}/10`;
+                    document.getElementById('student-result-name').innerText = docData.name;
+                    document.getElementById('student-result-mobile').innerText = docData.mobile;
+                    document.getElementById('student-result-place').innerText = docData.place;
+                    renderStudentAnswers(docData);
+                    return;
+                } else {
+                    return alert("α┤¿α┤┐α┤Öα╡ìα┤Öα╡╛ α┤çα┤ñα┤┐α┤¿α┤òα┤é α┤òα╡ìα┤╡α┤┐α┤╕α╡ì α┤¬α╡éα╡╝α┤ñα╡ìα┤ñα┤┐α┤»α┤╛α┤òα╡ìα┤òα┤┐ α┤òα┤┤α┤┐α┤₧α╡ìα┤₧α╡ü. α┤▒α┤┐α┤╕α╡╛α┤ƒα╡ìα┤ƒα╡ì α┤àα┤íα╡ìα┤«α┤┐α╡╗ α┤àα┤¬α╡ìα┤░α╡éα┤╡α┤▓α┤┐α┤¿α┤╛α┤»α┤┐ α┤òα┤╛α┤ñα╡ìα┤ñα┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α╡ü.");
+                }
+            }
+
+            if (!name || !place) {
+                return alert("α┤¬α╡çα┤░α╡üα┤é α┤╕α╡ìα┤Ñα┤▓α┤╡α╡üα┤é α┤¿α╡╜α┤òα╡üα┤ò.");
+            }
+
+            // Check if exam is open
+            try {
+                const controlSnap = await getDoc(controlDocRef);
+                if (controlSnap.exists() && controlSnap.data().isOpen === false) {
+                    return alert("α┤¬α┤░α╡Çα┤òα╡ìα┤╖ α┤çα┤¬α╡ìα┤¬α╡ïα╡╛ α┤òα╡ìα┤▓α╡ïα┤╕α╡ì α┤Üα╡åα┤»α╡ìα┤ñα┤┐α┤░α┤┐α┤òα╡ìα┤òα╡üα┤òα┤»α┤╛α┤úα╡ì.");
+                }
+            } catch (e) {
+                console.error("Error checking exam status", e);
+            }
+
+            // Fetch remote questions if available
+            try {
+                const qDocSnap = await getDoc(doc(db, "quiz_questions", "default"));
+                if (qDocSnap.exists() && qDocSnap.data().questions?.length > 0) {
+                    questions = qDocSnap.data().questions;
+                }
+            } catch(err) {
+                console.error("Failed to fetch questions, using fallback", err);
+            }
+
+            // Set selections array size dynamically based on questions fetched
+            if (selections.length !== questions.length) {
+                selections = Array(questions.length).fill(null);
+            }
+
+            studentData = { name, place, mobile, approved: false };
+            
+            // Resume selections if any from previous partially completed session
+            const savedSelections = localStorage.getItem('tlj_finalexam_selections');
+            if (savedSelections) {
+                try {
+                    selections = JSON.parse(savedSelections);
+                } catch (e) {}
+            }
+
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            renderQuestion();
+            startTimer();
+        };
+
+        window.renderQuestion = () => {
+            const q = questions[currentQ];
+            document.getElementById('q-number').innerText = `Question ${currentQ + 1} of 10`;
+            document.getElementById('q-text').innerText = `${currentQ + 1}. ${q.q}`;
+            ['a','b','c','d'].forEach(l => {
+                const btn = document.getElementById('opt-'+l);
+                btn.innerText = `${l.toUpperCase()}. ${q[l]}`;
+                btn.className = selections[currentQ] === l 
+                    ? "w-full p-4 border-2 border-blue-600 bg-blue-50 text-blue-900 rounded-xl text-left transition-all" 
+                    : "w-full p-4 border border-slate-200 bg-white text-slate-700 rounded-xl text-left hover:border-blue-300 transition-all";
+            });
+            
+            document.getElementById('prev-btn').classList.toggle('hidden', currentQ === 0);
+            if(currentQ === 9) {
+                document.getElementById('next-btn').innerText = "α┤▒α┤┐α┤╡α╡ìα┤»α╡éα┤╡α┤┐α┤▓α╡çα┤òα╡ìα┤òα╡ì";
+            } else {
+                document.getElementById('next-btn').innerText = "α┤àα┤ƒα╡üα┤ñα╡ìα┤ñα┤ñα╡ì";
+            }
+        };
+
+        window.selectOpt = (opt) => { 
+            selections[currentQ] = opt; 
+            localStorage.setItem('tlj_finalexam_selections', JSON.stringify(selections));
+            renderQuestion(); 
+        };
+        
+        window.goNext = () => {
+            if (currentQ < 9) { currentQ++; renderQuestion(); } 
+            else { showReview(); }
+        };
+
+        window.goPrev = () => {
+            if (currentQ > 0) { currentQ--; renderQuestion(); }
+        };
+
+        window.goBackToQuiz = () => {
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            renderQuestion();
+        };
+
+        window.showReview = () => {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('review-screen').classList.remove('hidden');
+            const list = document.getElementById('review-list');
+            list.innerHTML = questions.map((q, i) => {
+                const isSelected = !!selections[i];
+                const cardClass = isSelected 
+                    ? "p-4 bg-white rounded-lg mb-3 border border-blue-100 shadow-sm relative pr-14"
+                    : "p-4 bg-red-50 rounded-lg mb-3 border border-red-300 shadow-sm relative pr-14";
+                const btnClass = isSelected
+                    ? "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200"
+                    : "bg-red-100 text-red-800 border-red-300 hover:bg-red-200 animate-pulse";
+                
+                return `
+                <div class="${cardClass}">
+                    <button onclick="goToQuestionFromReview(${i})" class="absolute top-4 right-4 h-8 w-8 rounded-full font-bold flex items-center justify-center shadow-sm transition-colors cursor-pointer border ${btnClass}" title="α┤Üα╡ïα┤ªα╡ìα┤»α┤ñα╡ìα┤ñα┤┐α┤▓α╡çα┤òα╡ìα┤òα╡ì α┤ñα┤┐α┤░α┤┐α┤òα╡å α┤¬α╡ïα┤╡α╡üα┤ò">
+                        ${isSelected ? selections[i].toUpperCase() : '?'}
+                    </button>
+                    <p class="font-bold text-sm text-slate-800">${i+1}. ${q.q}</p>
+                    <select onchange="updateSelection(${i}, this.value)" class="mt-2 w-full text-xs border ${isSelected ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-red-200 bg-white text-red-900'} p-2 rounded-lg">
+                        <option value="" disabled ${!isSelected ? 'selected' : ''}>-- α┤ëα┤ñα╡ìα┤ñα┤░α┤é α┤ñα┤┐α┤░α┤₧α╡ìα┤₧α╡åα┤ƒα╡üα┤òα╡ìα┤òα╡üα┤ò --</option>
+                        <option value="a" ${selections[i]==='a'?'selected':''}>A. ${q.a}</option>
+                        <option value="b" ${selections[i]==='b'?'selected':''}>B. ${q.b}</option>
+                        <option value="c" ${selections[i]==='c'?'selected':''}>C. ${q.c}</option>
+                        <option value="d" ${selections[i]==='d'?'selected':''}>D. ${q.d}</option>
+                    </select>
+                </div>
+                `;
+            }).join('');
+        };
+
+        window.goToQuestionFromReview = (index) => {
+            currentQ = index;
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            renderQuestion();
+        };
+
+        window.updateSelection = (index, val) => { 
+            selections[index] = val; 
+            localStorage.setItem('tlj_finalexam_selections', JSON.stringify(selections));
+            showReview(); // Re-render to update the top-right button letter
+        };
+
+        window.submitQuiz = async (autoSubmit = false) => {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            const score = selections.filter((s, i) => s === questions[i].correct).length;
+            await addDoc(resultsCol, { ...studentData, selections, score, at: serverTimestamp() });
+            
+            localStorage.removeItem('tlj_finalexam_start');
+            localStorage.removeItem('tlj_finalexam_selections');
+
+            if (autoSubmit) {
+                document.getElementById('quiz-screen').classList.add('hidden');
+            }
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('finish-screen').classList.remove('hidden');
+        };
+
+        // ADMIN LOGIC
+        window.checkAdmin = () => {
+            const pw = prompt("Password α┤¿α╡╜α┤òα╡üα┤ò:");
+            if(pw === "admin456") {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('admin-screen').classList.remove('hidden');
+                loadAdminData();
+                loadExamStatus();
+            }
+        };
+
+        window.loadAdminData = loadAdminData;
+        async function loadAdminData() {
+            try { await signInAnonymously(auth); } catch(e) {}
+            try {
+                const snap = await getDocs(resultsCol);
+                const tbody = document.getElementById('admin-table-body');
+                tbody.innerHTML = '';
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    tbody.innerHTML += `
+                        <tr class="border-b border-blue-50 text-[11px]">
+                            <td class="p-3 font-medium">${d.name}</td>
+                            <td class="p-3 text-slate-500 tracking-wider">${d.mobile}</td>
+                            <td class="p-3 font-bold text-blue-600">${d.score}/10</td>
+                            <td class="p-3">${d.approved ? '<span class="text-green-600">Approved</span>' : '<span class="text-amber-500">Pending</span>'}</td>
+                            <td class="p-3 flex gap-2">
+                                <button onclick="deleteEntry('${docSnap.id}')" class="text-red-500 hover:underline">Delete</button>
+                                ${!d.approved ? `<button onclick="approveEntry('${docSnap.id}')" class="text-blue-600 font-bold hover:underline">Approve</button>` : ''}
+                            </td>
+                        </tr>`;
+                });
+            } catch (err) {
+                console.error("Admin Load Error", err);
+                alert("α┤íα┤╛α┤▒α╡ìα┤▒ α┤▓α┤¡α╡ìα┤»α┤«α┤╛α┤òα╡ìα┤òα╡üα┤¿α╡ìα┤¿α┤ñα┤┐α╡╜ α┤¬α┤┐α┤╢α┤òα╡ì. α┤çα┤¿α╡ìα┤▒α╡╝α┤¿α╡åα┤▒α╡ìα┤▒α╡ì α┤¬α┤░α┤┐α┤╢α╡ïα┤ºα┤┐α┤òα╡ìα┤òα╡üα┤ò.");
+            }
+        }
+
+        window.exportExcel = async () => {
+            const snap = await getDocs(resultsCol);
+            const data = snap.docs.map(doc => {
+                const d = doc.data();
+                const row = { Name: d.name, Place: d.place, Mobile: d.mobile, Score: d.score, Time: d.at?.toDate().toLocaleString() };
+                questions.forEach((q, i) => row[`Q${i+1}`] = d.selections[i] ? d.selections[i].toUpperCase() : 'N/A');
+                return row;
+            });
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "QuizResults");
+            XLSX.writeFile(wb, "VR26.xlsx");
+        };
+
+        window.approveAll = async () => {
+            if(!confirm("α┤Äα┤▓α╡ìα┤▓α┤╛ α┤╡α┤┐α┤ªα╡ìα┤»α┤╛α╡╝α┤ñα╡ìα┤Ñα┤┐α┤òα┤│α╡åα┤»α╡üα┤é α┤àα┤¬α╡ìα┤░α╡éα┤╡α╡ì α┤Üα╡åα┤»α╡ìα┤»α┤úα╡ï?")) return;
+            const snap = await getDocs(resultsCol);
+            const batch = writeBatch(db);
+            snap.forEach(d => batch.update(d.ref, { approved: true }));
+            await batch.commit();
+            loadAdminData();
+        };
+
+        window.deleteEntry = async (id) => { if(confirm("α┤ê α┤Äα╡╗α┤ƒα╡ìα┤░α┤┐ α┤¿α╡Çα┤òα╡ìα┤òα┤é α┤Üα╡åα┤»α╡ìα┤»α┤úα╡ï?")) { await deleteDoc(doc(db, "quiz_results", id)); loadAdminData(); } };
+        window.approveEntry = async (id) => { await updateDoc(doc(db, "quiz_results", id), { approved: true }); loadAdminData(); };
+
+        window.loadExamStatus = async () => {
+            const btn = document.getElementById('exam-status-btn');
+            try {
+                const docSnap = await getDoc(controlDocRef);
+                if (docSnap.exists()) {
+                    const isOpen = docSnap.data().isOpen;
+                    updateExamStatusButton(isOpen);
+                } else {
+                    // default to open
+                    updateExamStatusButton(true);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        window.updateExamStatusButton = (isOpen) => {
+            const btn = document.getElementById('exam-status-btn');
+            if (isOpen) {
+                btn.innerText = "EXAM: OPEN";
+                btn.className = "bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors";
+                btn.dataset.status = "open";
+            } else {
+                btn.innerText = "EXAM: CLOSED";
+                btn.className = "bg-red-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-red-700 transition-colors";
+                btn.dataset.status = "closed";
+            }
+        };
+
+        window.toggleExamStatus = async () => {
+            const btn = document.getElementById('exam-status-btn');
+            const isCurrentlyOpen = btn.dataset.status === "open";
+            const newStatus = !isCurrentlyOpen;
+            if (confirm(`α┤¬α┤░α╡Çα┤òα╡ìα┤╖ ${newStatus ? 'OPEN' : 'CLOSE'} α┤Üα╡åα┤»α╡ìα┤»α┤úα╡ï?`)) {
+                await setDoc(controlDocRef, { isOpen: newStatus }, { merge: true });
+                updateExamStatusButton(newStatus);
+            }
+        };
+
+        window.downloadTemplate = () => {
+            const wsData = [
+                ["No", "Question", "Option A", "Option B", "Option C", "Option D", "Correct Answer (a, b, c, or d)"],
+                [1, "Sample Question: What is the capital of Saudi Arabia?", "Jeddah", "Riyadh", "Mecca", "Medina", "b"],
+                [2, "Sample Question: Which among these is an apple?", "Apple", "Car", "Banana", "Bus", "a"]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Template");
+            XLSX.writeFile(wb, "FinalExam_Question_Template.xlsx");
+        };
+
+        window.uploadQuestions = async () => {
+            const fileInput = document.getElementById('question-upload');
+            
+            if (!fileInput.files.length) return alert("α┤ªα┤»α┤╡α┤╛α┤»α┤┐ Excel α┤½α┤»α╡╜ α┤ñα┤┐α┤░α┤₧α╡ìα┤₧α╡åα┤ƒα╡üα┤òα╡ìα┤òα╡üα┤ò.");
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                // validate header length, usually minimum 7 columns
+                if(rows.length < 2) return alert("α┤╡α┤╛α┤▓α┤┐α┤íα┤╛α┤» α┤Üα╡ïα┤ªα╡ìα┤»α┤Öα╡ìα┤Öα╡╛ α┤òα┤úα╡ìα┤ƒα╡åα┤ñα╡ìα┤ñα┤╛α┤¿α┤╛α┤»α┤┐α┤▓α╡ìα┤▓.");
+                
+                let newQuestions = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (!r[1]) continue; // Skip empty question rows
+                    
+                    let correctRaw = r[6] ? String(r[6]).toLowerCase().trim() : "";
+                    
+                    if (!['a','b','c','d'].includes(correctRaw)) {
+                        return alert(`α┤░α┤┐α┤░α┤┐α┤òα╡å α┤¬α┤┐α┤┤α┤╡α╡ì: α┤Üα╡ïα┤ªα╡ìα┤»α┤é ${i} α┤▓α╡å α┤╢α┤░α┤┐α┤»α┤╛α┤» α┤ëα┤ñα╡ìα┤ñα┤░α┤é α┤¿α╡╜α┤òα┤┐α┤»α┤┐α┤ƒα╡ìα┤ƒα┤┐α┤▓α╡ìα┤▓ α┤àα┤Ñα┤╡α┤╛ α┤ñα╡åα┤▒α╡ìα┤▒α┤╛α┤úα╡ì (a, b, c, or d α┤«α┤╛α┤ñα╡ìα┤░α┤é).`);
+                    }
+
+                    newQuestions.push({
+                        q: String(r[1] || ""),
+                        a: String(r[2] || ""),
+                        b: String(r[3] || ""),
+                        c: String(r[4] || ""),
+                        d: String(r[5] || ""),
+                        correct: correctRaw
+                    });
+                }
+                
+                if (newQuestions.length === 0) return alert("α┤»α┤╛α┤ñα╡èα┤░α╡ü α┤Üα╡ïα┤ªα╡ìα┤»α┤Öα╡ìα┤Öα┤│α╡üα┤é α┤╡α┤╛α┤»α┤┐α┤òα╡ìα┤òα┤╛α╡╗ α┤òα┤┤α┤┐α┤₧α╡ìα┤₧α┤┐α┤▓α╡ìα┤▓.");
+                if (!confirm(`${newQuestions.length} α┤Üα╡ïα┤ªα╡ìα┤»α┤Öα╡ìα┤Öα╡╛ α┤Üα╡ïα┤ªα╡ìα┤»α┤╛α┤╡α┤▓α┤┐α┤»α┤┐α┤▓α╡çα┤òα╡ìα┤òα╡ì α┤«α┤╛α┤▒α╡ìα┤▒α┤╛α╡╗ α┤ñα┤╛α┤Öα╡ìα┤òα╡╛α┤òα╡ìα┤òα╡ì α┤ëα┤▒α┤¬α╡ìα┤¬α┤╛α┤úα╡ï? (α┤¬α┤┤α┤»α┤╡ α┤«α┤╛α┤»α╡ìα┤òα╡ìα┤òα┤¬α╡ìα┤¬α╡åα┤ƒα╡üα┤é)`)) return;
+
+                const uploadBtn = document.getElementById('upload-btn');
+                uploadBtn.innerText = "Uploading...";
+                
+                try {
+                    await setDoc(doc(db, "quiz_questions", "default"), { questions: newQuestions });
+                    alert(`α┤╡α┤┐α┤£α┤»α┤òα┤░α┤«α┤╛α┤»α┤┐ α┤Üα╡ïα┤ªα╡ìα┤»α┤Öα╡ìα┤Öα╡╛ α┤àα┤¬α╡ìα┤íα╡çα┤▒α╡ìα┤▒α╡ì α┤Üα╡åα┤»α╡ìα┤ñα╡ü!`);
+                    fileInput.value = ""; // clear
+                } catch (err) {
+                    console.error("Upload Questions Error", err);
+                    alert("α┤Üα╡ïα┤ªα╡ìα┤»α┤Öα╡ìα┤Öα╡╛ α┤╕α╡çα┤╡α╡ì α┤Üα╡åα┤»α╡ìα┤»α╡üα┤¿α╡ìα┤¿α┤ñα┤┐α╡╜ α┤¬α┤┐α┤╢α┤òα╡ì!");
+                } finally {
+                    uploadBtn.innerText = "UPLOAD";
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        };
+
+        window.downloadMobilesTemplate = () => {
+            const wsData = [
+                ["Mobile Number"],
+                ["966-501797382"],
+                ["91-7034253576"]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Mobiles");
+            XLSX.writeFile(wb, "Authorized_Mobiles_Template.xlsx");
+        };
+
+        window.uploadMobiles = async () => {
+            const fileInput = document.getElementById('mobile-upload');
+            if (!fileInput.files.length) return alert("α┤ªα┤»α┤╡α┤╛α┤»α┤┐ Excel α┤½α┤»α╡╜ α┤ñα┤┐α┤░α┤₧α╡ìα┤₧α╡åα┤ƒα╡üα┤òα╡ìα┤òα╡üα┤ò.");
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                
+                let newMobiles = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (r[0]) {
+                        newMobiles.push(String(r[0]).trim());
+                    }
+                }
+                
+                if (newMobiles.length === 0) return alert("α┤╡α┤╛α┤▓α┤┐α┤íα┤╛α┤» α┤«α╡èα┤¼α╡êα╡╜ α┤¿α┤«α╡ìα┤¬α┤▒α╡üα┤òα╡╛ α┤òα┤úα╡ìα┤ƒα╡åα┤ñα╡ìα┤ñα┤╛α┤¿α┤╛α┤»α┤┐α┤▓α╡ìα┤▓.");
+                if (!confirm(`${newMobiles.length} α┤¿α┤«α╡ìα┤¬α┤▒α╡üα┤òα╡╛ α┤àα┤¬α╡ìα┤íα╡çα┤▒α╡ìα┤▒α╡ì α┤Üα╡åα┤»α╡ìα┤»α┤╛α╡╗ α┤ñα┤╛α┤Öα╡ìα┤òα╡╛α┤òα╡ìα┤òα╡ì α┤ëα┤▒α┤¬α╡ìα┤¬α┤╛α┤úα╡ï? (α┤¬α┤┤α┤»α┤╡ α┤«α┤╛α┤»α╡ìα┤òα╡ìα┤òα┤¬α╡ìα┤¬α╡åα┤ƒα╡üα┤é)`)) return;
+
+                const btn = document.getElementById('upload-mobiles-btn');
+                btn.innerText = "Uploading...";
+                
+                try {
+                    await setDoc(doc(db, "quiz_control", "allowed_mobiles"), { mobiles: newMobiles });
+                    alert("α┤«α╡èα┤¼α╡êα╡╜ α┤¿α┤«α╡ìα┤¬α┤▒α╡üα┤òα╡╛ α┤╡α┤┐α┤£α┤»α┤òα┤░α┤«α┤╛α┤»α┤┐ α┤àα┤¬α╡ìα┤íα╡çα┤▒α╡ìα┤▒α╡ì α┤Üα╡åα┤»α╡ìα┤ñα╡ü!");
+                    fileInput.value = "";
+                } catch (err) {
+                    console.error("Upload Mobiles Error", err);
+                    alert("α┤╕α╡çα┤╡α╡ì α┤Üα╡åα┤»α╡ìα┤»α╡üα┤¿α╡ìα┤¿α┤ñα┤┐α╡╜ α┤¬α┤┐α┤╢α┤òα╡ì!");
+                } finally {
+                    btn.innerText = "UPLOAD";
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        window.onload = () => {
+            const cached = localStorage.getItem('tlj_student');
+            if(cached) {
+                try {
+                    const data = JSON.parse(cached);
+                    if(data.name) document.getElementById('name').value = data.name;
+                    if(data.place) document.getElementById('place').value = data.place;
+                    if(data.raw_mobile) document.getElementById('mobile').value = data.raw_mobile;
+                } catch(e) {}
+            }
+        };
+
+        signInAnonymously(auth);
+    </script>
+</head>
+<body class="p-4 flex flex-col items-center min-h-screen">
+    <div class="max-w-xl w-full glass rounded-[2.5rem] shadow-2xl overflow-hidden">
+        <div class="blue-gradient p-8 text-center text-white">
+            <h1 class="text-2xl font-bold">α┤╡α╡åα┤│α┤┐α┤Üα╡ìα┤Üα┤é α┤▒α┤«α┤ªα┤╛α╡╗ <br> 2026 (VR2026)</h1>
+            <p class="text-blue-100 text-xs mt-2"><a href="https://velichamsaudionline.com/" target="_blank" class="hover:text-white underline transition-colors">velichamsaudionline.com</a></p>
+        </div>
+
+        <div class="p-8">
+            <div id="login-screen" class="space-y-4">
+                <input type="text" id="name" placeholder="α┤¬α╡éα╡╝α┤úα╡ìα┤ú α┤¿α┤╛α┤«α┤é (Name)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="text" id="place" placeholder="α┤╕α╡ìα┤Ñα┤▓α┤é (Place)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <input type="text" id="mobile" placeholder="α┤«α╡èα┤¼α╡êα╡╜ (eg: 91-7034253576)" class="w-full p-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <button onclick="startQuiz()" class="w-full blue-gradient text-white p-5 rounded-2xl font-bold shadow-lg hover:scale-[1.02] active:scale-95 transition-all">α┤¬α╡ìα┤░α┤╡α╡çα┤╢α┤┐α┤òα╡ìα┤òα╡üα┤ò</button>
+                <button onclick="checkAdmin()" class="w-full text-slate-400 text-[10px] mt-6 hover:text-blue-500 uppercase tracking-widest">Admin Access</button>
+            </div>
+
+            <div id="quiz-screen" class="hidden">
+                <div class="mb-4 flex justify-between items-center text-center">
+                    <span id="q-number" class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider"></span>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full tracking-wider flex items-center gap-1 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                        </svg>
+                        <span id="timer-display">10:00</span>
+                    </span>
+                </div>
+                <div id="q-text" class="font-bold text-slate-800 text-lg mb-8 leading-relaxed"></div>
+                <div class="space-y-3">
+                    <button id="opt-a" onclick="selectOpt('a')" class="w-full p-4 border rounded-xl"></button>
+                    <button id="opt-b" onclick="selectOpt('b')" class="w-full p-4 border rounded-xl"></button>
+                    <button id="opt-c" onclick="selectOpt('c')" class="w-full p-4 border rounded-xl"></button>
+                    <button id="opt-d" onclick="selectOpt('d')" class="w-full p-4 border rounded-xl"></button>
+                </div>
+                <div class="flex justify-between items-center mt-10">
+                    <button id="prev-btn" onclick="goPrev()" class="bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold shadow-sm hidden transition-colors hover:bg-slate-300">α┤«α╡üα┤«α╡ìα┤¬α┤ñα╡ìα┤ñα╡å</button>
+                    <!-- hidden sm:block added to hide link on very small screens if needed, else mx-auto keeps it centered -->
+                    <button onclick="showReview()" class="text-blue-600 text-[10px] sm:text-xs font-bold underline mx-auto">α┤╕α┤¼α╡ìα┤«α┤┐α┤▒α╡ìα┤▒α╡ì α┤Åα┤░α┤┐α┤»</button>
+                    <button id="next-btn" onclick="goNext()" class="blue-gradient text-white px-6 py-3 rounded-xl font-bold shadow-md transition-transform hover:scale-105">α┤àα┤ƒα╡üα┤ñα╡ìα┤ñα┤ñα╡ì</button>
+                </div>
+            </div>
+
+            <div id="review-screen" class="hidden">
+                <h2 class="font-bold text-slate-800 mb-6 text-center">α┤¿α┤┐α┤Öα╡ìα┤Öα┤│α╡üα┤ƒα╡å α┤ëα┤ñα╡ìα┤ñα┤░α┤Öα╡ìα┤Öα╡╛ α┤¬α┤░α┤┐α┤╢α╡ïα┤ºα┤┐α┤òα╡ìα┤òα╡üα┤ò</h2>
+                <div id="review-list" class="max-h-[350px] overflow-y-auto mb-6 pr-2"></div>
+                <div class="flex gap-4">
+                    <button onclick="goBackToQuiz()" class="w-1/3 bg-slate-200 text-slate-700 p-5 rounded-2xl font-bold shadow-sm transition-colors hover:bg-slate-300">α┤ñα┤┐α┤░α┤┐α┤òα╡å</button>
+                    <button onclick="submitQuiz()" class="w-2/3 blue-gradient text-white p-5 rounded-2xl font-bold shadow-lg transition-transform hover:scale-[1.02]">α┤½α╡êα┤¿α╡╜ α┤╕α┤¼α╡ìα┤«α┤┐α┤▒α╡ìα┤▒α╡ì</button>
+                </div>
+            </div>
+
+            <div id="admin-screen" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-blue-900">Admin Control</h2>
+                    <div class="flex gap-2">
+                        <button onclick="loadAdminData(); loadExamStatus();" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-indigo-700 transition-colors">REFRESH</button>
+                        <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-blue-700 transition-colors">HOME</button>
+                        <button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors">EXCEL REPORT</button>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl justify-center mb-6">
+                    <button id="exam-status-btn" onclick="toggleExamStatus()" class="bg-gray-400 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm transition-colors" data-status="loading">LOADING...</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mb-6">
+                    <!-- Allowed Mobiles Upload -->
+                    <div class="col-span-1 bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+                            <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Authorized Mobiles (Excel)</h3>
+                            <button onclick="downloadMobilesTemplate()" class="text-[10px] sm:text-xs text-blue-600 font-bold hover:bg-blue-50 px-2 py-1 rounded transition-colors underline">Download Template</button>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="file" id="mobile-upload" accept=".xlsx, .xls" class="flex-1 w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 p-1.5 border border-slate-200 rounded cursor-pointer">
+                            <button id="upload-mobiles-btn" onclick="uploadMobiles()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors whitespace-nowrap">UPLOAD</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Questions Upload -->
+                    <div class="col-span-1 bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+                            <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Upload Questions (Excel)</h3>
+                            <button onclick="downloadTemplate()" class="text-[10px] sm:text-xs text-blue-600 font-bold hover:bg-blue-50 px-2 py-1 rounded transition-colors underline">Download Template</button>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="file" id="question-upload" accept=".xlsx, .xls" class="flex-1 w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 p-1.5 border border-slate-200 rounded cursor-pointer">
+                            <button id="upload-btn" onclick="uploadQuestions()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors whitespace-nowrap">UPLOAD</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="approveAll()" class="w-full bg-blue-100 text-blue-700 py-3 rounded-xl mb-6 text-xs font-bold hover:bg-blue-200 transition-colors">APPROVE ALL STUDENTS</button>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[10px] text-slate-500 border-b border-blue-100 uppercase bg-blue-50/50">
+                                <th class="p-3">Name</th>
+                                <th class="p-3">Mobile</th>
+                                <th class="p-3">Score</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="finish-screen" class="hidden text-center py-10">
+                <h2 class="text-2xl font-bold text-green-600 mb-4">α┤¬α┤░α╡Çα┤òα╡ìα┤╖ α┤¬α╡éα╡╝α┤ñα╡ìα┤ñα┤┐α┤»α┤╛α┤»α┤┐!</h2>
+                <p class="text-slate-600">α┤àα┤íα╡ìα┤«α┤┐α╡╗ α┤àα┤¬α╡ìα┤░α╡éα┤╡α╡ì α┤Üα╡åα┤»α╡ìα┤ñ α┤╢α╡çα┤╖α┤é α┤¿α┤┐α┤Öα╡ìα┤Öα┤│α╡üα┤ƒα╡å α┤«α┤╛α╡╝α┤òα╡ìα┤òα╡ì α┤¬α┤░α┤┐α┤╢α╡ïα┤ºα┤┐α┤òα╡ìα┤òα┤╛α┤╡α╡üα┤¿α╡ìα┤¿α┤ñα┤╛α┤úα╡ì.</p>
+                <button onclick="location.reload()" class="mt-8 text-blue-600 text-xs font-bold underline">Home</button>
+            </div>
+
+            <div id="student-result-screen" class="hidden text-center py-10">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">α┤¿α┤┐α┤Öα╡ìα┤Öα┤│α╡üα┤ƒα╡å α┤▒α┤┐α┤╕α╡╛α┤ƒα╡ìα┤ƒα╡ì</h2>
+                <div class="text-6xl font-bold text-blue-600 mb-2" id="student-score-display">0/10</div>
+                <p class="text-slate-600 font-medium mb-6">α┤àα┤¡α┤┐α┤¿α┤¿α╡ìα┤ªα┤¿α┤Öα╡ìα┤Öα╡╛!</p>
+                
+                <div class="bg-blue-50 p-4 rounded-xl mb-6 text-sm text-left border border-blue-100 shadow-sm w-full">
+                    <p class="mb-2"><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">α┤¬α╡çα┤░α╡ì (Name):</span> <br><span id="student-result-name" class="text-blue-900 font-bold text-base"></span></p>
+                    <p class="mb-2"><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">α┤«α╡èα┤¼α╡êα╡╜ (Mobile):</span> <br><span id="student-result-mobile" class="text-blue-900 font-bold text-base tracking-wider"></span></p>
+                    <p><span class="font-bold text-slate-500 text-xs uppercase tracking-widest">α┤╕α╡ìα┤Ñα┤▓α┤é (Place):</span> <br><span id="student-result-place" class="text-blue-900 font-bold text-base"></span></p>
+                </div>
+
+                <div id="student-answers-list" class="max-h-[400px] overflow-y-auto mb-6 pr-2"></div>
+                <!-- We wrap the home button in a flex container so it looks like a nice solid button -->
+                <button onclick="location.reload()" class="w-full bg-slate-200 text-slate-700 p-5 rounded-2xl font-bold shadow-sm transition-colors hover:bg-slate-300">Home</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
