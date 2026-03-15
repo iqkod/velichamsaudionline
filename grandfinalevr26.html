@@ -615,7 +615,7 @@
             }
         }
 
-        window.exportExcel = async () => {
+        window.exportExcelSummary = async () => {
             const snap = await getDocs(resultsCol);
             const data = snap.docs.map(docSnap => {
                 const d = docSnap.data();
@@ -634,7 +634,53 @@
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "GrandFinaleList");
-            XLSX.writeFile(wb, "GrandFinale.xlsx");
+            XLSX.writeFile(wb, "GrandFinale_Marks.xlsx");
+        };
+
+        window.exportExcelDetailed = async () => {
+            const btn = document.querySelector('button[onclick="exportExcelDetailed()"]');
+            const origTxt = btn.innerText;
+            btn.innerText = "Gen...";
+            try {
+                // Pre-fetch questions for all rounds just in case we only have it in DB
+                for (let i = 1; i <= 4; i++) {
+                    const roundKey = `round${i}`;
+                    const qDocSnap = await getDoc(doc(db, "grand_finale_vr26_questions", roundKey));
+                    if (qDocSnap.exists() && qDocSnap.data().questions?.length > 0) {
+                        grandQuestions[roundKey] = qDocSnap.data().questions;
+                    }
+                }
+
+                const snap = await getDocs(resultsCol);
+                const data = snap.docs.map(docSnap => {
+                    const d = docSnap.data();
+                    const obj = { Name: d.name, Place: d.place, Mobile: d.mobile };
+                    [1,2,3,4].forEach(rIdx => {
+                        const rKey = `round${rIdx}`;
+                        const rData = d[rKey];
+                        if (rData) {
+                            obj[`R${rIdx}_Score`] = rData.score;
+                            const rQs = grandQuestions[rKey] || [];
+                            for(let qIdx=0; qIdx<rQs.length; qIdx++) {
+                                let sel = rData.selections && rData.selections[qIdx] ? rData.selections[qIdx] : 'NA';
+                                obj[`R${rIdx}_Q${qIdx+1}`] = sel.toString().toUpperCase();
+                            }
+                        } else {
+                            obj[`R${rIdx}_Score`] = 'NA';
+                        }
+                    });
+                    return obj;
+                });
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Detailed_Report");
+                XLSX.writeFile(wb, "GrandFinale_Detailed.xlsx");
+            } catch (err) {
+                console.error("Export Detailed Error", err);
+                alert("റിപ്പോർട്ട് തയ്യാറാക്കുന്നതിൽ പിശക്!");
+            } finally {
+                btn.innerText = origTxt;
+            }
         };
 
         window.approveAll = async () => {
@@ -880,6 +926,165 @@
             reader.readAsArrayBuffer(file);
         };
 
+        window.addMobileManually = async () => {
+            const num = document.getElementById('manual-mobile').value.trim();
+            if(!num) return alert("ദയവായി മൊബൈൽ നമ്പർ നൽകുക.");
+            
+            const btn = document.getElementById('add-mobile-btn');
+            btn.innerText = "Adding...";
+            try {
+                const docRef = doc(db, "grand_finale_vr26_control", "allowed_mobiles");
+                const docSnap = await getDoc(docRef);
+                let currentMobiles = [];
+                if (docSnap.exists() && docSnap.data().mobiles) {
+                    currentMobiles = docSnap.data().mobiles;
+                }
+                if (currentMobiles.includes(num)) {
+                    alert("ഈ നമ്പർ നിലവിലുണ്ട്.");
+                    return;
+                }
+                currentMobiles.push(num);
+                await setDoc(docRef, { mobiles: currentMobiles });
+                alert("മൊബൈൽ നമ്പർ വിജയകരമായി ചേർത്തു.");
+                document.getElementById('manual-mobile').value = "";
+            } catch (err) {
+                console.error("Add Mobile Error", err);
+                alert("സേവ് ചെയ്യുന്നതിൽ പിശക്!");
+            } finally {
+                btn.innerText = "ADD";
+            }
+        };
+
+        let adminEditingRound = "";
+        let adminEditingQuestions = [];
+
+        window.openQuestionEditorForRound = async () => {
+            const r = document.getElementById('edit-round-select').value;
+            if(!r) return alert("ദയവായി ഒരു Round തിരഞ്ഞെടുക്കുക.");
+            adminEditingRound = r;
+            
+            document.getElementById('admin-screen').classList.add('hidden');
+            document.getElementById('admin-editor-screen').classList.remove('hidden');
+            document.getElementById('admin-editor-title').innerText = `EDIT QUESTIONS - ${r.toUpperCase()}`;
+            document.getElementById('admin-editor-list').innerHTML = `<p class="text-center text-slate-500 py-10 font-bold">ചോദ്യങ്ങൾ ലോഡ് ചെയ്യുന്നു...</p>`;
+            
+            try {
+                const qDocSnap = await getDoc(doc(db, "grand_finale_vr26_questions", r));
+                if (qDocSnap.exists() && qDocSnap.data().questions?.length > 0) {
+                    adminEditingQuestions = [...qDocSnap.data().questions];
+                } else {
+                    // Fallback to local
+                    adminEditingQuestions = [...grandQuestions[r]];
+                }
+            } catch(e) {
+                console.error("Error loading for edit", e);
+                adminEditingQuestions = [...grandQuestions[r]];
+            }
+            renderAdminEditor();
+        };
+
+        window.renderAdminEditor = () => {
+            const container = document.getElementById('admin-editor-list');
+            container.innerHTML = '';
+            adminEditingQuestions.forEach((q, i) => {
+                const correctStr = Array.isArray(q.correct) ? q.correct.join(', ') : q.correct;
+                const div = document.createElement('div');
+                div.className = "bg-white p-4 rounded-xl border border-indigo-100 shadow-sm mb-4 relative text-left";
+                div.innerHTML = `
+                    <button onclick="deleteAdminQuestion(${i})" class="absolute top-2 right-2 text-red-500 font-bold hover:text-red-700 text-xs tracking-widest flex items-center gap-1 bg-red-50 px-2 py-1 rounded"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg> DEL</button>
+                    <div class="flex flex-col gap-3 mt-4">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">ചോദ്യം ${i+1}</label>
+                            <textarea id="edit-q-${i}" class="w-full text-sm p-3 border border-slate-200 rounded-lg outline-none focus:border-indigo-400 font-bold text-slate-700 leading-relaxed" rows="2">${q.q}</textarea>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[9px] font-bold text-indigo-500 uppercase tracking-widest pl-1">Option A</label>
+                                <input type="text" id="edit-a-${i}" value="${q.a || ""}" placeholder="Option A text" class="w-full text-xs p-3 font-bold border border-slate-200 rounded-lg outline-none focus:border-indigo-400">
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-bold text-indigo-500 uppercase tracking-widest pl-1">Option B</label>
+                                <input type="text" id="edit-b-${i}" value="${q.b || ""}" placeholder="Option B text" class="w-full text-xs p-3 font-bold border border-slate-200 rounded-lg outline-none focus:border-indigo-400">
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-bold text-indigo-500 uppercase tracking-widest pl-1">Option C</label>
+                                <input type="text" id="edit-c-${i}" value="${q.c || ""}" placeholder="Option C text" class="w-full text-xs p-3 font-bold border border-slate-200 rounded-lg outline-none focus:border-indigo-400">
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-bold text-indigo-500 uppercase tracking-widest pl-1">Option D</label>
+                                <input type="text" id="edit-d-${i}" value="${q.d || ""}" placeholder="Option D text" class="w-full text-xs p-3 font-bold border border-slate-200 rounded-lg outline-none focus:border-indigo-400">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 gap-3 pb-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Correct Answers (comma separated: a, b, c, d)</label>
+                                <input type="text" id="edit-correct-${i}" value="${correctStr}" placeholder="e.g. a, c" class="w-full text-xs p-3 font-black text-emerald-600 border border-slate-200 rounded-lg outline-none focus:border-emerald-400 uppercase bg-emerald-50">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        window.deleteAdminQuestion = (idx) => {
+            if(confirm('ഈ ചോദ്യം ഡിലീറ്റ് ചെയ്യണോ?')) {
+                adminEditingQuestions.splice(idx, 1);
+                renderAdminEditor();
+            }
+        };
+
+        window.addAdminQuestion = () => {
+            adminEditingQuestions.push({ q: "", a: "", b: "", c: "", d: "", correct: ["a"] });
+            renderAdminEditor();
+            const container = document.getElementById('admin-editor-list');
+            setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
+        };
+
+        window.saveAdminQuestions = async () => {
+            const btn = document.getElementById('save-editor-btn');
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+            
+             let newQ = [];
+            for (let i = 0; i < adminEditingQuestions.length; i++) {
+                const qText = document.getElementById(`edit-q-${i}`).value.trim();
+                const aText = document.getElementById(`edit-a-${i}`).value.trim();
+                const bText = document.getElementById(`edit-b-${i}`).value.trim();
+                const cText = document.getElementById(`edit-c-${i}`).value.trim();
+                const dText = document.getElementById(`edit-d-${i}`).value.trim();
+                const correctRaw = document.getElementById(`edit-correct-${i}`).value.toLowerCase();
+                
+                let correctArr = correctRaw.split(',').map(s => s.trim()).filter(s => ['a','b','c','d'].includes(s));
+                
+                if (correctArr.length === 0) {
+                    alert(`ചോദ്യം ${i+1} ന്റെ ശരിയായ ഉത്തരം തെറ്റാണ്. a, b, c, or d നൽകുക.`);
+                    btn.disabled = false;
+                    btn.innerText = "SAVE CHANGES";
+                    return;
+                }
+                
+                newQ.push({ q: qText, a: aText, b: bText, c: cText, d: dText, correct: correctArr });
+            }
+            
+            try {
+                await setDoc(doc(db, "grand_finale_vr26_questions", adminEditingRound), { questions: newQ });
+                alert("ചോദ്യങ്ങൾ വിജയകരമായി സേവ് ചെയ്തു.");
+                closeAdminEditor();
+            } catch(e) {
+                console.error(e);
+                alert("സേവ് ചെയ്യുന്നതിൽ പിശക്!");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "SAVE CHANGES";
+            }
+        };
+
+        window.closeAdminEditor = () => {
+            document.getElementById('admin-editor-screen').classList.add('hidden');
+            document.getElementById('admin-screen').classList.remove('hidden');
+        };
+
         window.onload = () => {
             const cached = localStorage.getItem('tlj_student');
             if(cached) {
@@ -955,7 +1160,8 @@
                         <div class="flex gap-2">
                             <button onclick="loadAdminData(); loadExamStatus();" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-indigo-700 transition-colors">REFRESH</button>
                             <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-blue-700 transition-colors">HOME</button>
-                            <button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors">EXCEL REPORT</button>
+                            <button onclick="exportExcelSummary()" class="bg-green-600 text-white px-3 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-green-700 transition-colors">EXCEL MARKS</button>
+                            <button onclick="exportExcelDetailed()" class="bg-teal-600 text-white px-3 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-teal-700 transition-colors">EXCEL DETAILED</button>
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl justify-center">
@@ -978,34 +1184,59 @@
                             </div>
                         </div>
                         
-                        <!-- Allowed Mobiles Upload -->
+                        <!-- Allowed Mobiles Upload & Add -->
                         <div class="col-span-1 md:col-span-3 bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-                                <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Authorized Mobiles (Excel)</h3>
+                                <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Authorized Mobiles</h3>
                                 <button onclick="downloadMobilesTemplate()" class="text-[10px] sm:text-xs text-blue-600 font-bold hover:bg-blue-50 px-2 py-1 rounded transition-colors underline">Download Template</button>
                             </div>
-                            <div class="flex flex-col sm:flex-row gap-2">
+                            <div class="flex flex-col sm:flex-row gap-2 mb-3">
                                 <input type="file" id="mobile-upload" accept=".xlsx, .xls" class="flex-1 w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 p-1.5 border border-slate-200 rounded cursor-pointer">
                                 <button id="upload-mobiles-btn" onclick="uploadMobiles()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors whitespace-nowrap">UPLOAD</button>
                             </div>
+                            <hr class="my-2 border-slate-100">
+                            <div class="flex flex-col sm:flex-row gap-2 mt-3 items-stretch sm:items-center">
+                                <input type="text" id="manual-mobile" placeholder="Add manually (e.g. 966-501234567)" class="flex-1 w-full text-xs p-2 border border-slate-200 rounded outline-none focus:ring-2 focus:ring-blue-500">
+                                <button id="add-mobile-btn" onclick="addMobileManually()" class="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-green-700 transition-colors whitespace-nowrap">ADD</button>
+                            </div>
                         </div>
                         
-                        <!-- Bulk Questions Upload -->
-                        <div class="col-span-1 md:col-span-2 bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
-                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-                                <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Upload Questions (Excel)</h3>
-                                <button onclick="downloadTemplate()" class="text-[10px] sm:text-xs text-blue-600 font-bold hover:bg-blue-50 px-2 py-1 rounded transition-colors underline">Download Template</button>
+                        <!-- Bulk Questions Upload and Edit Questions -->
+                        <div class="col-span-1 md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Bulk Questions Upload -->
+                            <div class="bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+                                    <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider">Upload Questions</h3>
+                                    <button onclick="downloadTemplate()" class="text-[10px] sm:text-xs text-blue-600 font-bold hover:bg-blue-50 px-2 py-1 rounded transition-colors underline">Download Template</button>
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <select id="upload-round-select" class="p-2 border border-slate-200 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500 w-full mb-1">
+                                        <option value="" disabled selected>Select Round...</option>
+                                        <option value="round1">Round 1</option>
+                                        <option value="round2">Round 2</option>
+                                        <option value="round3">Round 3</option>
+                                        <option value="round4">Round 4</option>
+                                    </select>
+                                    <div class="flex flex-col sm:flex-row gap-2">
+                                        <input type="file" id="question-upload" accept=".xlsx, .xls" class="flex-1 w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 p-1.5 border border-slate-200 rounded cursor-pointer">
+                                        <button id="upload-btn" onclick="uploadQuestions()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors whitespace-nowrap">UPLOAD</button>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex flex-col sm:flex-row gap-2">
-                                <select id="upload-round-select" class="p-2 border border-slate-200 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]">
-                                    <option value="" disabled selected>Select Round...</option>
-                                    <option value="round1">Round 1</option>
-                                    <option value="round2">Round 2</option>
-                                    <option value="round3">Round 3</option>
-                                    <option value="round4">Round 4</option>
-                                </select>
-                                <input type="file" id="question-upload" accept=".xlsx, .xls" class="flex-1 w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 p-1.5 border border-slate-200 rounded cursor-pointer">
-                                <button id="upload-btn" onclick="uploadQuestions()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-blue-700 transition-colors whitespace-nowrap">UPLOAD</button>
+                            
+                            <!-- Edit Questions UI -->
+                            <div class="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm">
+                                <h3 class="font-bold text-[11px] text-slate-500 uppercase tracking-wider mb-2">Edit Questions</h3>
+                                <div class="flex flex-col gap-2 mt-3">
+                                    <select id="edit-round-select" class="p-2 border border-slate-200 rounded text-sm outline-none focus:ring-2 focus:ring-indigo-500 w-full mb-1">
+                                        <option value="" disabled selected>Select Round...</option>
+                                        <option value="round1">Round 1</option>
+                                        <option value="round2">Round 2</option>
+                                        <option value="round3">Round 3</option>
+                                        <option value="round4">Round 4</option>
+                                    </select>
+                                    <button onclick="openQuestionEditorForRound()" class="w-full bg-indigo-600 text-white px-4 py-2 rounded text-xs font-bold shadow-sm hover:bg-indigo-700 transition-colors">OPEN EDITOR</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1028,6 +1259,26 @@
                         </thead>
                         <tbody id="admin-table-body"></tbody>
                     </table>
+                </div>
+            </div>
+
+            <div id="admin-editor-screen" class="hidden">
+                <div class="flex justify-between items-center mb-6 mt-4">
+                    <h2 id="admin-editor-title" class="font-bold text-indigo-900 uppercase tracking-widest text-sm">EDIT QUESTIONS</h2>
+                    <button onclick="closeAdminEditor()" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-slate-300 transition-colors">BACK</button>
+                </div>
+                
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-6 flex justify-between items-center shadow-sm flex-wrap gap-3">
+                    <span class="text-xs font-bold text-indigo-800">പുതിയ ചോദ്യങ്ങൾ ചേർക്കാം അല്ലെങ്കിൽ എഡിറ്റ് ചെയ്യാം</span>
+                    <button onclick="addAdminQuestion()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow hover:bg-indigo-700 transition-colors flex items-center gap-2">
+                        + ADD NEW QUESTION
+                    </button>
+                </div>
+
+                <div id="admin-editor-list" class="max-h-[500px] overflow-y-auto pr-2 pb-10"></div>
+                
+                <div class="mt-6 pt-4 border-t border-slate-200 flex justify-end">
+                    <button id="save-editor-btn" onclick="saveAdminQuestions()" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-sm font-black shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all w-full md:w-auto">SAVE CHANGES</button>
                 </div>
             </div>
 
